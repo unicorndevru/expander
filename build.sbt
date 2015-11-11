@@ -22,6 +22,8 @@ val commons = Seq(
   scalaVersion := "2.11.7",
   resolvers ++= Seq(
     "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
+    "scalaz-bintray" at "https://dl.bintray.com/scalaz/releases",
+    "bintray-alari-maven" at "https://dl.bintray.com/alari/releases",
     Resolver.sonatypeRepo("snapshots")
   ),
   publishTo := Some(Resolver.file("file", new File("/mvn-repo")))
