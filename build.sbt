@@ -5,10 +5,11 @@ import scalariform.formatter.preferences._
 
 name := "expander-gather"
 
+version := "0.1"
+
 val expanderV = "0.3.3"
 
 scalaVersion := "2.11.7"
-
 
 val commonScalariform = scalariformSettings :+ (ScalariformKeys.preferences := ScalariformKeys.preferences.value
   .setPreference(AlignParameters, true)
@@ -23,19 +24,21 @@ val commons = Seq(
   resolvers ++= Seq(
     "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
     "scalaz-bintray" at "https://dl.bintray.com/scalaz/releases",
-    "bintray-alari-maven" at "https://dl.bintray.com/alari/releases",
-    Resolver.sonatypeRepo("snapshots")
+    Resolver.bintrayRepo("alari", "generic")
   ),
-  publishTo := Some(Resolver.file("file", new File("/mvn-repo")))
+  licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
+  publishTo := Some(Resolver.bintrayRepo("alari", "generic")),
+  bintrayPackageLabels := Seq("scala", "play", "api"),
+  publishMavenStyle := false
 ) ++ commonScalariform
 
 commons
 
-lazy val `psgr-expander` = (project in file("."))
-  .dependsOn(`psgr-expander-realtime`)
-  .aggregate(`psgr-expander-realtime`)
+lazy val `expander` = (project in file("."))
+  .dependsOn(`expander-realtime`)
+  .aggregate(`expander-realtime`)
 
-lazy val `psgr-failures` = (project in file("failures")).settings(commons: _*).settings(
+lazy val `failures` = (project in file("failures")).settings(commons: _*).settings(
   name := "failures",
   version := "0.1.0",
   libraryDependencies ++= Seq(
@@ -43,7 +46,7 @@ lazy val `psgr-failures` = (project in file("failures")).settings(commons: _*).s
   )
 )
 
-lazy val `psgr-expander-core` = (project in file("core")).settings(commons: _*).settings(
+lazy val `expander-core` = (project in file("core")).settings(commons: _*).settings(
   name := "expander",
   version := expanderV,
   libraryDependencies ++= Seq(
@@ -53,7 +56,7 @@ lazy val `psgr-expander-core` = (project in file("core")).settings(commons: _*).
   )
 )
 
-lazy val `psgr-expander-protocol` = (project in file("protocol")).settings(commons: _*).settings(
+lazy val `expander-protocol` = (project in file("protocol")).settings(commons: _*).settings(
   name := "expander-protocol",
   version := expanderV,
   libraryDependencies ++= Seq(
@@ -62,7 +65,7 @@ lazy val `psgr-expander-protocol` = (project in file("protocol")).settings(commo
   )
 )
 
-lazy val `psgr-expander-play` = (project in file("play")).settings(commons: _*).settings(
+lazy val `expander-play` = (project in file("play")).settings(commons: _*).settings(
   name := "expander-play",
   version := expanderV,
   libraryDependencies ++= Seq(
@@ -70,10 +73,10 @@ lazy val `psgr-expander-play` = (project in file("play")).settings(commons: _*).
   )
 ).enablePlugins(PlayScala)
   .disablePlugins(PlayLayoutPlugin)
-  .dependsOn(`psgr-expander-core`, `psgr-expander-protocol`, `psgr-failures`)
-  .aggregate(`psgr-expander-core`, `psgr-expander-protocol`, `psgr-failures`)
+  .dependsOn(`expander-core`, `expander-protocol`, `failures`)
+  .aggregate(`expander-core`, `expander-protocol`, `failures`)
 
-lazy val `psgr-expander-realtime` = (project in file("realtime")).settings(commons: _*).settings(
+lazy val `expander-realtime` = (project in file("realtime")).settings(commons: _*).settings(
   name := "expander-realtime",
   version := expanderV,
   libraryDependencies ++= Seq(
@@ -82,8 +85,8 @@ lazy val `psgr-expander-realtime` = (project in file("realtime")).settings(commo
   )
 ).enablePlugins(PlayScala)
   .disablePlugins(PlayLayoutPlugin)
-  .dependsOn(`psgr-expander-play`)
-  .aggregate(`psgr-expander-play`)
+  .dependsOn(`expander-play`)
+  .aggregate(`expander-play`)
 
 offline := true
 
