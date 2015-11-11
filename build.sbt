@@ -18,12 +18,10 @@ val commonScalariform = scalariformSettings :+ (ScalariformKeys.preferences := S
   .setPreference(RewriteArrowSymbols, true))
 
 val commons = Seq(
-  organization := "me.passenger",
+  organization := "ru.unicorndev",
   scalaVersion := "2.11.7",
   resolvers ++= Seq(
-    "dgtl" at "http://dev.dgtl.pro/repo/",
     "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
-    "scalaz-bintray" at "https://dl.bintray.com/scalaz/releases",
     Resolver.sonatypeRepo("snapshots")
   ),
   publishTo := Some(Resolver.file("file", new File("/mvn-repo")))
