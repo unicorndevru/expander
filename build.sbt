@@ -11,6 +11,8 @@ val expanderV = "0.3.3"
 
 scalaVersion := "2.11.7"
 
+val gitHeadCommitSha = settingKey[String]("current git commit SHA")
+
 val commonScalariform = scalariformSettings :+ (ScalariformKeys.preferences := ScalariformKeys.preferences.value
   .setPreference(AlignParameters, true)
   .setPreference(AlignSingleLineCaseStatements, true)
@@ -26,9 +28,10 @@ val commons = Seq(
     "scalaz-bintray" at "https://dl.bintray.com/scalaz/releases",
     Resolver.bintrayRepo("alari", "generic")
   ),
+  gitHeadCommitSha in ThisBuild := Process("git rev-parse --short HEAD").lines.head,
   licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
-  publishTo := Some(Resolver.bintrayRepo("alari", "generic")),
   bintrayPackageLabels := Seq("scala", "play", "api"),
+  bintrayRepository := "generic",
   publishMavenStyle := false
 ) ++ commonScalariform
 
