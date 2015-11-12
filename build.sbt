@@ -31,8 +31,7 @@ val commons = Seq(
   gitHeadCommitSha in ThisBuild := Process("git rev-parse --short HEAD").lines.head,
   licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
   bintrayPackageLabels := Seq("scala", "play", "api"),
-  bintrayRepository := "generic",
-  publishMavenStyle := false
+  bintrayRepository := "generic"
 ) ++ commonScalariform
 
 commons
