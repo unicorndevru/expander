@@ -3,7 +3,7 @@ import sbt.Keys._
 
 import scalariform.formatter.preferences._
 
-name := "expander-gather"
+name := "expander"
 
 version := "0.1"
 
@@ -36,9 +36,19 @@ val commons = Seq(
 
 commons
 
+lazy val `expander-akka` = (project in file("akka")).settings(commons:_*).settings(
+  name := "expander-akka",
+  version := "0.4.0."+gitHeadCommitSha.value,
+  libraryDependencies ++= Seq(
+    "com.lihaoyi" %% "fastparse" % "0.2.1",
+    "org.scalatest" %% "scalatest" % "2.2.5" % Test,
+    "junit" % "junit" % "4.12" % Test
+  )
+)
+
 lazy val `expander` = (project in file("."))
-  .dependsOn(`expander-realtime`)
-  .aggregate(`expander-realtime`)
+  .dependsOn(`expander-akka`)
+  .aggregate(`expander-akka`)
 
 lazy val `failures` = (project in file("failures")).settings(commons: _*).settings(
   name := "failures",
