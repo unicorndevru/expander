@@ -1,8 +1,8 @@
 package expander.ast
 
 case class Expand(
-  path:   String,
-  params: Map[String, String]
+  path:   Option[String]      = None,
+  params: Map[String, String] = Map.empty
 )
 
 case class Field(
