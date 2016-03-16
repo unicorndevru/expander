@@ -40,6 +40,7 @@ lazy val `expander-akka` = (project in file("akka")).settings(commons:_*).settin
   name := "expander-akka",
   version := "0.4.0."+gitHeadCommitSha.value,
   libraryDependencies ++= Seq(
+    "com.typesafe.play" %% "play-json" % "2.5.0",
     "com.lihaoyi" %% "fastparse" % "0.2.1",
     "org.scalatest" %% "scalatest" % "2.2.5" % Test,
     "junit" % "junit" % "4.12" % Test

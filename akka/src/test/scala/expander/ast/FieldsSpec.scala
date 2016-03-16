@@ -2,9 +2,10 @@ package expander.ast
 
 import fastparse.core.Result
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{ OptionValues, TryValues, Matchers, WordSpec }
+import org.scalatest.{ Matchers, OptionValues, TryValues, WordSpec }
 
 object FieldParser {
+
   private object Parse {
 
     import fastparse.all._
@@ -67,7 +68,9 @@ object FieldParser {
 class FieldsSpec extends WordSpec with Matchers with ScalaFutures with TryValues
     with OptionValues {
 
-  "field parse" should {
+  import play.api.libs.json._
+
+  /* "field parse" should {
     "parse subfields" in {
 
       FieldParser.parse("user") should be(Field("$", Map("user" → Field("user"))))
@@ -91,6 +94,6 @@ class FieldsSpec extends WordSpec with Matchers with ScalaFutures with TryValues
       FieldParser.parse("user()") should be(Field("$", Map("user" → Field("user"))))
       FieldParser.parse("user(path)") should be(Field("$", Map("user" → Field("user", expand = Some(Expand(Some("path")))))))
     }
-  }
+  }*/
 
 }
