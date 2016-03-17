@@ -1,6 +1,5 @@
 package expander.core
 
-import expander.ast.PathRequest
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{ Matchers, OptionValues, TryValues, WordSpec }
 

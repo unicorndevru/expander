@@ -1,10 +1,10 @@
-package expander.ast
+package expander.core
 
 import fastparse.core.Result
 import play.api.libs.json._
 
-case class PathRequest(path: JsPath, params: Map[String, String] = Map.empty, inners: Seq[PathRequest] = Seq.empty) {
-  def matchParams(given: JsPath): Option[Map[String, String]] = {
+case class PathRequest(path: JsPath, params: Seq[(String, String)] = Seq.empty, inners: Seq[PathRequest] = Seq.empty) {
+  def matchParams(given: JsPath): Option[Seq[(String, String)]] = {
     val prefix = if (path.path.isEmpty) None
     else if (path.path.startsWith(given.path)) {
       Some(JsPath(path.path.drop(given.path.size)))
@@ -31,8 +31,8 @@ case class PathRequest(path: JsPath, params: Map[String, String] = Map.empty, in
       )
 
       if (expand.isEmpty) params
-      else if (r.path.nonEmpty) Map("_expand" → expand.mkString(","))
-      else params + ("_expand" → expand.mkString(","))
+      else if (r.path.nonEmpty) Seq(Expander.Key → expand.mkString(","))
+      else params :+ (Expander.Key → expand.mkString(","))
     }
   }
 
@@ -48,7 +48,7 @@ object PathRequest {
 
   case class PathToken(path: JsPath) extends RequestToken
 
-  case class ParamsToken(params: Map[String, String]) extends RequestToken
+  case class ParamsToken(params: Seq[(String, String)]) extends RequestToken
 
   case class InnersToken(inners: Seq[Seq[RequestToken]]) extends RequestToken
 
@@ -70,7 +70,7 @@ object PathRequest {
     val pathToken: Parser[PathToken] = P(path.map(PathToken))
 
     val paramsPair: Parser[(String, String)] = P(spaces ~ name ~ spaces ~ ":" ~ spaces ~ value ~ spaces)
-    val params: Parser[Map[String, String]] = P("(" ~ paramsPair.rep(sep = ",") ~ ")").map(_.toMap)
+    val params: Parser[Seq[(String, String)]] = P("(" ~ paramsPair.rep(sep = ",") ~ ")")
 
     val paramsToken: Parser[ParamsToken] = P(params.map(ParamsToken))
 

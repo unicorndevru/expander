@@ -1,6 +1,5 @@
 package expander.core
 
-import expander.ast.PathRequest
 import play.api.libs.json.Reads._
 import play.api.libs.json._
 
@@ -8,6 +7,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 object Expander {
+
+  val Key = "_expand"
 
   def apply[T](root: T, reqs: PathRequest*)(implicit expandContext: ExpandContext[T], rootWrites: Writes[T]): Future[JsValue] = {
     val resources = expandContext.resources(root)

@@ -5,5 +5,5 @@ import play.api.libs.json.JsValue
 import scala.concurrent.Future
 
 trait ResourceContext[T] {
-  def resolve(params: Map[String, String]): Future[JsValue]
+  def resolve(params: Seq[(String, String)]): Future[JsValue]
 }
