@@ -5,11 +5,9 @@ import scalariform.formatter.preferences._
 
 name := "expander"
 
-version := "0.1"
-
 val expanderV = "0.4.0"
 
-scalaVersion := "2.11.7"
+val akkaV = "2.4.2"
 
 val gitHeadCommitSha = settingKey[String]("current git commit SHA")
 
@@ -23,6 +21,7 @@ val commonScalariform = scalariformSettings :+ (ScalariformKeys.preferences := S
 val commons = Seq(
   organization := "ru.unicorndev",
   scalaVersion := "2.11.7",
+  version := expanderV + "." +gitHeadCommitSha.value,
   resolvers ++= Seq(
     "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
     "scalaz-bintray" at "https://dl.bintray.com/scalaz/releases",
@@ -30,7 +29,7 @@ val commons = Seq(
   ),
   gitHeadCommitSha in ThisBuild := Process("git rev-parse --short HEAD").lines.head,
   licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
-  bintrayPackageLabels := Seq("scala", "play", "api"),
+  bintrayPackageLabels := Seq("scala", "akka-http", "api", "json", "rest"),
   bintrayRepository := "generic"
 ) ++ commonScalariform
 
@@ -38,7 +37,6 @@ commons
 
 lazy val `expander-core` = (project in file("core")).settings(commons:_*).settings(
   name := "expander-core",
-  version := expanderV + "." +gitHeadCommitSha.value,
   libraryDependencies ++= Seq(
     "com.typesafe.play" %% "play-json" % "2.5.0",
     "com.lihaoyi" %% "fastparse" % "0.3.7",
@@ -47,9 +45,19 @@ lazy val `expander-core` = (project in file("core")).settings(commons:_*).settin
   )
 )
 
-lazy val `expander` = (project in file("."))
-  .dependsOn(`expander-core`)
+lazy val `expander-akka` = (project in file("akka")).settings(commons:_*).settings(
+  name := "expander-akka",
+  libraryDependencies ++= Seq(
+    "com.typesafe.akka" %% "akka-http-experimental" % akkaV,
+    "com.typesafe.akka" %% "akka-http-testkit" % akkaV % Test,
+    "org.scalatest" %% "scalatest" % "2.2.5" % Test
+  )
+) .dependsOn(`expander-core`)
   .aggregate(`expander-core`)
+
+lazy val `expander` = (project in file("."))
+  .dependsOn(`expander-akka`, `expander-core`)
+  .aggregate(`expander-akka`, `expander-core`)
 
 
 offline := true
