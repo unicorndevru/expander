@@ -36,8 +36,8 @@ val commons = Seq(
 
 commons
 
-lazy val `expander-akka` = (project in file("akka")).settings(commons:_*).settings(
-  name := "expander-akka",
+lazy val `expander-core` = (project in file("core")).settings(commons:_*).settings(
+  name := "expander-core",
   version := expanderV + "." +gitHeadCommitSha.value,
   libraryDependencies ++= Seq(
     "com.typesafe.play" %% "play-json" % "2.5.0",
@@ -48,8 +48,8 @@ lazy val `expander-akka` = (project in file("akka")).settings(commons:_*).settin
 )
 
 lazy val `expander` = (project in file("."))
-  .dependsOn(`expander-akka`)
-  .aggregate(`expander-akka`)
+  .dependsOn(`expander-core`)
+  .aggregate(`expander-core`)
 
 
 offline := true
