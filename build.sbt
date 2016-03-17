@@ -41,7 +41,7 @@ lazy val `expander-core` = (project in file("core")).settings(commons:_*).settin
   version := expanderV + "." +gitHeadCommitSha.value,
   libraryDependencies ++= Seq(
     "com.typesafe.play" %% "play-json" % "2.5.0",
-    "com.lihaoyi" %% "fastparse" % "0.2.1",
+    "com.lihaoyi" %% "fastparse" % "0.3.7",
     "org.scalatest" %% "scalatest" % "2.2.5" % Test,
     "junit" % "junit" % "4.12" % Test
   )

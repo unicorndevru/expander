@@ -1,6 +1,6 @@
 package expander.core
 
-import fastparse.core.Result
+import fastparse.core.Parsed
 import play.api.libs.json._
 
 case class PathRequest(path: JsPath, params: Seq[(String, String)] = Seq.empty, inners: Seq[PathRequest] = Seq.empty) {
@@ -132,9 +132,9 @@ object PathRequest {
   }
 
   def parse(line: String): Seq[PathRequest] = Parse.innersSeq.parse(line) match {
-    case Result.Success(inners, _) ⇒
+    case Parsed.Success(inners, _) ⇒
       fold(flatten(inners))
-    case _: Result.Failure ⇒
+    case _: Parsed.Failure ⇒
       Seq.empty
   }
 }
