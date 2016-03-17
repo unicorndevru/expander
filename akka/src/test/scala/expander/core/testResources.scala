@@ -1,10 +1,27 @@
 package expander.core
 
+import expander.ast.PathRequest
 import play.api.libs.json._
 
 import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
 
 object testResources {
+
+  trait ResolveById[T] {
+    def getById(id: String): Future[T]
+  }
+
+  protected def leaf[TT: Writes: ResolveById](id: String) =
+    new ResourceContext[TT] {
+      override def resolve(params: Map[String, String]) = implicitly[ResolveById[TT]].getById(id).map(implicitly[Writes[TT]].writes)
+    }
+
+  protected def ref[TT: Writes: ResolveById: ExpandContext](id: String) =
+    new ResourceContext[TT] {
+      override def resolve(params: Map[String, String]) = implicitly[ResolveById[TT]].getById(id).flatMap(Expander(_, params.get("_expand").map(PathRequest.parse).getOrElse(Seq.empty): _*))
+    }
+
   case class Wrapper(id: String, fooId: String, barId: String)
 
   implicit val wrapperW = Json.writes[Wrapper]

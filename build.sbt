@@ -7,7 +7,7 @@ name := "expander"
 
 version := "0.1"
 
-val expanderV = "0.3.3"
+val expanderV = "0.4.0"
 
 scalaVersion := "2.11.7"
 
@@ -38,7 +38,7 @@ commons
 
 lazy val `expander-akka` = (project in file("akka")).settings(commons:_*).settings(
   name := "expander-akka",
-  version := "0.4.0."+gitHeadCommitSha.value,
+  version := expanderV + "." +gitHeadCommitSha.value,
   libraryDependencies ++= Seq(
     "com.typesafe.play" %% "play-json" % "2.5.0",
     "com.lihaoyi" %% "fastparse" % "0.2.1",
@@ -51,55 +51,6 @@ lazy val `expander` = (project in file("."))
   .dependsOn(`expander-akka`)
   .aggregate(`expander-akka`)
 
-lazy val `failures` = (project in file("failures")).settings(commons: _*).settings(
-  name := "failures",
-  version := "0.1.0",
-  libraryDependencies ++= Seq(
-    json % Provided
-  )
-)
-
-lazy val `expander-core` = (project in file("core")).settings(commons: _*).settings(
-  name := "expander",
-  version := expanderV,
-  libraryDependencies ++= Seq(
-    "com.lihaoyi" %% "fastparse" % "0.2.1",
-    json % Provided,
-    "org.specs2" %% "specs2-core" % "3.6" % Test
-  )
-)
-
-lazy val `expander-protocol` = (project in file("protocol")).settings(commons: _*).settings(
-  name := "expander-protocol",
-  version := expanderV,
-  libraryDependencies ++= Seq(
-    json % Provided,
-    "org.specs2" %% "specs2-core" % "3.6" % Test
-  )
-)
-
-lazy val `expander-play` = (project in file("play")).settings(commons: _*).settings(
-  name := "expander-play",
-  version := expanderV,
-  libraryDependencies ++= Seq(
-    ws % Provided
-  )
-).enablePlugins(PlayScala)
-  .disablePlugins(PlayLayoutPlugin)
-  .dependsOn(`expander-core`, `expander-protocol`, `failures`)
-  .aggregate(`expander-core`, `expander-protocol`, `failures`)
-
-lazy val `expander-realtime` = (project in file("realtime")).settings(commons: _*).settings(
-  name := "expander-realtime",
-  version := expanderV,
-  libraryDependencies ++= Seq(
-    ws % Provided,
-    specs2 % Test
-  )
-).enablePlugins(PlayScala)
-  .disablePlugins(PlayLayoutPlugin)
-  .dependsOn(`expander-play`)
-  .aggregate(`expander-play`)
 
 offline := true
 

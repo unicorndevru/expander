@@ -1,14 +1,20 @@
 package expander.core
 
+import expander.ast.PathRequest
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{ Matchers, OptionValues, TryValues, WordSpec }
 
 import testResources._
 
+import play.api.libs.json._
+import scala.language.implicitConversions
+
 class ExpanderSpec extends WordSpec with Matchers with ScalaFutures with TryValues
     with OptionValues {
 
-  import play.api.libs.json._
+  implicit def jsPathToReq(p: JsPath): PathRequest = PathRequest(p)
+
+  import Expander.{ apply ⇒ expand }
 
   "expander" should {
 
