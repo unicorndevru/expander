@@ -107,7 +107,7 @@ object PathRequest {
 
   private def groupPaths(paths: List[JsPath]): Map[JsPath, Seq[JsPath]] = paths match {
     case head :: tail ⇒
-      val (subs, rest) = tail.span(isSubpathOf(head))
+      val (subs, rest) = tail.partition(isSubpathOf(head))
       groupPaths(rest) + (head → subs)
 
     case Nil ⇒
@@ -129,6 +129,13 @@ object PathRequest {
         val req = pathMap(p)
         req.copy(inners = fold(req.inners ++ subReqs.map(sr ⇒ sr.copy(path = JsPath(sr.path.path.drop(p.path.size))))))
     }.toSeq
+  }
+
+  def parsePath(line: String): Option[JsPath] = Parse.path.parse(line) match {
+    case Parsed.Success(v, _) ⇒
+      Some(v)
+    case _ ⇒
+      None
   }
 
   def parse(line: String): Seq[PathRequest] = Parse.innersSeq.parse(line) match {

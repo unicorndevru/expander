@@ -23,7 +23,7 @@ object Expander {
         v.resolve(pathMatches(k).reduce(_ ++ _)).map(k → _)
     } map {
       rs ⇒
-        val (keyPaths, arrPaths) = rs.span(_._1.path.forall(_.isInstanceOf[KeyPathNode]))
+        val (keyPaths, arrPaths) = rs.partition(_._1.path.forall(_.isInstanceOf[KeyPathNode]))
 
         val arrToKeyPaths = arrPaths.map {
           case (p, v) ⇒
