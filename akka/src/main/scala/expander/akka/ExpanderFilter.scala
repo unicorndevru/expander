@@ -51,9 +51,10 @@ object ExpanderFilter {
 
                         val completeJson = complete(
                           resp.copy(
-                            headers = resp.headers.filterNot(h => h.lowercaseName() == "etag" || h.lowercaseName() == "last-modified"),
+                            headers = resp.headers.filterNot(h ⇒ h.lowercaseName() == "etag" || h.lowercaseName() == "last-modified"),
                             entity = HttpEntity.Strict(ContentTypes.`application/json`, ByteString(jsonString))
-                          ))
+                          )
+                        )
 
                         if (conditionalEnabled) {
                           (get {

@@ -30,6 +30,8 @@ class JsonGenericProviderSpec extends WordSpec with Matchers with BeforeAndAfter
     "resolve inside arrays" in {
 
       provider(Json.obj("test" → Json.obj("thingId" → "123", "offset" → 1))) shouldBe Map((__ \ "test" \ "thing") → "/things/123?offset=1")
+      provider(Json.obj("test" → Seq(Json.obj("thingId" → "123", "offset" → 1)))) shouldBe Map(((__ \ "test" apply 0) \ "thing") → "/things/123?offset=1")
+      provider(Json.obj("test" → Seq(Json.obj("thingId" → "123", "offset" → 1), Json.obj("thingId" → "345")))) shouldBe Map(((__ \ "test" apply 0) \ "thing") → "/things/123?offset=1", ((__ \ "test" apply 1) \ "thing") → "/things/345")
 
     }
 

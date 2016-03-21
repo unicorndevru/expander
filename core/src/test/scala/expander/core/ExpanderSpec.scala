@@ -1,17 +1,20 @@
 package expander.core
 
 import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.time.{ Milliseconds, Seconds, Span, Units }
 import org.scalatest.{ Matchers, OptionValues, TryValues, WordSpec }
-
 import testResources._
-
 import play.api.libs.json._
+
 import scala.language.implicitConversions
 
 class ExpanderSpec extends WordSpec with Matchers with ScalaFutures with TryValues
     with OptionValues {
 
   implicit def jsPathToReq(p: JsPath): PathRequest = PathRequest(p)
+
+  // TODO profile
+  override implicit def patienceConfig = PatienceConfig(Span(250, Milliseconds), Span(15, Milliseconds))
 
   import Expander.{ apply ⇒ expand }
 

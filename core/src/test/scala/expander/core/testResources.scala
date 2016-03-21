@@ -12,13 +12,13 @@ object testResources {
   }
 
   protected def leaf[TT: Writes: ResolveById](id: String) =
-    new ResourceContext[TT] {
-      override def resolve(params: Seq[(String, String)]) = implicitly[ResolveById[TT]].getById(id).map(implicitly[Writes[TT]].writes)
+    ResourceContext[TT] {
+      params ⇒ implicitly[ResolveById[TT]].getById(id).map(implicitly[Writes[TT]].writes)
     }
 
   protected def ref[TT: Writes: ResolveById: ExpandContext](id: String) =
-    new ResourceContext[TT] {
-      override def resolve(params: Seq[(String, String)]) = implicitly[ResolveById[TT]].getById(id).flatMap(Expander(_, params.toMap.get(Expander.Key).map(PathRequest.parse).getOrElse(Seq.empty): _*))
+    ResourceContext[TT] {
+      params ⇒ implicitly[ResolveById[TT]].getById(id).flatMap(Expander(_, params.toMap.get(Expander.Key).map(PathRequest.parse).getOrElse(Seq.empty): _*))
     }
 
   case class Wrapper(id: String, fooId: String, barId: String)
