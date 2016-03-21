@@ -1,9 +1,9 @@
 package expander.core
 
+import expander.core.testResources._
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.time.{ Milliseconds, Seconds, Span, Units }
+import org.scalatest.time.{ Milliseconds, Span }
 import org.scalatest.{ Matchers, OptionValues, TryValues, WordSpec }
-import testResources._
 import play.api.libs.json._
 
 import scala.language.implicitConversions

@@ -81,7 +81,7 @@ class ExpanderFilterSpec extends WordSpec with Matchers with BeforeAndAfterAll w
         (json \ "items").as[JsArray].value.size shouldBe 2
         (json \ "items" \\ "postId").map(_.as[Int]) shouldBe Seq(1, 2)
         (json \ "items" \\ "resolved").size shouldBe 2
-        //(json \ "items" \\ "params").map(_.as[Map[String, String]]) shouldBe Seq(Map("test" → "some"), Map("test" → "some"))
+        (json \ "items" \\ "params").map(_.as[Map[String, String]]) shouldBe Seq(Map("test" → "some"), Map("test" → "some"))
       }
     }
   }
