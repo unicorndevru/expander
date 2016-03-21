@@ -1,303 +1,142 @@
+# Expander
+
 [![Build Status](https://travis-ci.org/unicorndevru/expander.svg?branch=master)](https://travis-ci.org/unicorndevru/expander)
 
-#Protocol
+A tool to build composed JSON responses fetching several destinations.
+Expander is to be commpared with `GraphQL`, but offers less with the smaller effort: Expander is config-based and extremely simple to set up and use.
 
-## Expander
+Build with _Scala_ and _akka-http_, but can also be used as a proxy.
 
-Некоторые поля в ответах сервера представляют собой ссылки на сторонние ресурсы.
+## Example:
 
-Допустим, `GET /api/test` возвращает такой json:
+`GET /api/auth`
 
-```
+```json
 {
-  "user": {
-    "meta": {
-      "href": "/api/users/adfhsogha9ehae890fhaoie"
-    }
-  }
-}  
-```
-
-Тогда поле `user` может быть развёрнуто на клиенте с помощью модификации запроса:
-
-`GET /api/test?expand=user`
-
-Поле `user` будет заменено на результат запроса к `href` с правами текущего пользователя.
-
-Ответ может быть таким:
-
-```
-{
-  "user": {
-    "meta": {
-      "href": "/api/users/adfhsogha9ehae890fhaoie"
-    },
-    "name": "Vassily"
-  }
-}  
-```
-
-А может -- таким:
-
-```
-{
-  "user": {
-    "meta": {
-      "href": "/api/users/adfhsogha9ehae890fhaoie"
-    },
-    "failure": {
-      "status": "403",
-      "code": "forbidden"
-    }
-  }
-}  
-```
-
-Ошибки в разворачиваемых полях инъектируются на свои места как json, согласно стандарту ошибок.
-
-Можно запрашивать вложенные структуры, в том числе тогда, когда они в свою очередь тоже требуют подгрузки:
-
-`GET /api/users/fdgnaegln9e40gae9?expand=phones,settings,settings.paypal`
-
-В случае, если поле, которое нужно развернуть, находится в объектах -- членах списка, запрос строится точно так же. Поле будет развёрнуто во всех объектах.
-
-Разворачивание референса всегда сохраняет поле `meta`.
-
-## Ответ с выборкой
-
-Если в ответе приходит список сущностей (напр. телефоны у пользователя, айтемы в поиске, список пользователей в админке), должны сохраняться следующие инварианты:
-
-- Бэкэнд возвращает только объект
-- У объекта есть поле `meta` со ссылкой на ресурс, из которого получена выборка
-- У объекта есть поле `items` с массивом выборки
-- Если endpoint поддерживает соответствующие функции, то возвращаются поля `limit`, `offset`, `total`, `sortBy`
-
-То есть в общем виде ответ выглядит так:
-
-```
-{
-    "meta": (...),
-    "items": [
-        {item 1},
-        {item 2},
-        ...
-    ]
+  "userId": "123",
+  "roles": ["admin"]
 }
 ```
 
-Если используются параметры, ограничивающие выборку без изменения адреса ресурса (`offset`, `limit`, и т.п.), они возвращаются в том же объекте.
- 
-Экспандер может разворачивать отношения внутри массивов. Для этого нужно передать поле, которое требуется расширить, стандартным путём, игнорируя обёртку массива, например:
+With expander can be auto-composed with the fetched User resource:
 
-`GET /api/phones?userId=srkglanrlg&expand=items.user`
+`GET /api/auth?_expand=user`
 
-## Дополнительные параметры
-
-Во вложенные запросы, разворачиваемые экспандером, можно передавать дополнительные параметры в query string.
-
-Синтаксис:
-
-`fieldName(param:value,p2:val2).subField,otherField`
-
-`field1(p1:p2).field2(p3:p4).field3`
-
-Это особенно полезно для передачи параметра `limit` для получения ограниченной подвыборки или только счётчика результатов в поле `total`.˚
-
-## Короткая запись вложенных полей
-
-Для сокращения писанины при перечислении вложенных полей используется дополнительный сахар:
-
-`field.sub1,field.sub2,field.sub3` == `field.{sub1,sub2,sub3}`
-
-Можно использовать весь функционал экспандера внутри фигурных скобок:
-
-`field1(p:v).{sub1(p1:v1),sub2.{sub3(p3:v3)}}`
-
-### Операнд `!`
-
-Для того, чтобы уменьшить количество возвращаемых данных и получить только указанные вложенные поля, используйте операнд `!`:
-
-`field.!sub`
-
-`field.!{sub1, sub2}`
-
-`field.!{sub1, sub2.!sub3}`
-
-Будут возвращены только указанные поля (и поле meta).
-
-## Методы Http
-
-### PUT
-
-Идемподентный запрос -- подразумевает полную замену сущности, а значит, полную валидацию.
-
-Требует конкретного адреса с конкретными `id`. Не может использоваться для создания сущности.
-
-### POST
-
-Не идемподентный запрос.
-
-Может выполнять две функции:
-
-- Создание объекта в контейнере. Например, `POST /api/carts/f8awg94gha948g/items`. Результат -- `201 Created`, `Location: ...`
-- Изменение полей в объекте, действие, -- частичный апдейт. Результат -- `200 Ok`.
-
-### GET
-
-Идемподентный запрос. Возвращает каждый раз одно и то же -- сущность.
-
-### DELETE
-
-Идемподентный запрос.
-
-## Названия полей и фрагментов адреса
-
-В API и протоколе используем camelCase -- более нативный и привычный для клиентов на javascript, чем under_scored.
-
-Сущности называем во множественном числе в случае, если это не очевидная составная часть. Например: `/api/carts`, `/api/users`, а не `/api/cart`, `api/user`.
-
-## Дополнительные заголовки ответа
-
-### X-Expanded
-
-Заголовок возвращается экспандером, содержит в себе время в миллисекундах, потраченное на сборку ответа экспандером на бэкэнде.
-
-
-# Errors standard
-
-- Ошибка = unhappy path
-- Мы используем http status codes для ошибок приложения
-- Если ошибку вернул промежуточный слой (nginx, play, spray возвращают как минимум 400 404 500 502 503), то у них неформатный body и их интерпретируем только по status code.
-
-Для нашей логики используем коды:
-
-- 400 запрос оформлен неверно (например, не пройдена валидация, кот. можно делать на клиенте)
-- 403 у пользователя нет прав на доступ к ресурсу
-- 401 авторизуйся, чтоб я мог проверить твои права
-- 404 нет данных, подходящих под запрос
-- 412 для каких-то данных в запросе требуется дополнительное действие (например, формат телефона верен, но он не верифицирован)
-
-Сообщение об ошибке всегда (в т.ч. в сокет) возвращаем в виде:
-
-    {failure:{
-        status: "http status",
-        code: "string code, specific for some kind of errors",
-        summary: "some text, could be shown to the user",
-        service: "the one possibly responsible for the problem",
-        data: (any code-specific json data, e.g. field names with errors, item ids, etc.)
-    }}
-
-В жаваскрипте их можно вычленить типа
-
-    if(!!data.failure) {
-        e.g. toaster
-    } else {
-        alert("Fucking error");
-    }
-    
-    
-# Работа с сокетом
-
-Обычные сообщения всегда должны приходить на клиент в таком формате:
-
+```json
+{
+  "userId": "123",
+  "roles": ["admin"],
+  "user": {
+    "id": "123",
+    "name": "Fred"
+  }
+}
 ```
+
+This requires the following configuration to be provided:
+
+```hocon
+expander {
+  base-url: "http://localhost:9000/api"
+  patterns: [
     {
-        meta: {
-            href: "/api/domains/id",
-            mediaType: "application/domain+json;v=1"
-        },
-        $set: {
-            field: "new value"
-        },
-        $unset: {
-            field: true,
-            other: true
-        },
-        $pull: { items: [
-            {
-                meta: {
-                    href: "/api/domains/id/items/iid",
-                    mediaType: "application/domain-item+json;v=1"
-                }
-            }
-        ]},
-        $prepend: { items: [
-            {
-                meta: {
-                    href: "/api/domains/id/items/iid",
-                    mediaType: "application/domain-item+json;v=1"
-                }
-            }
-        ]},
-        $append: { items: [
-            {
-                meta: {
-                    href: "/api/domains/id/items/iid",
-                    mediaType: "application/domain-item+json;v=1"
-                }
-            }
-        ]}
+      url: "/users/:userId"
+      path: user
     }
+  ]
+}
 ```
 
-## Подписывание на события
+Expander does idempotent `GET` requests, forwarding or setting headers, and caches responses within a session.
 
-Для подписывания следует отслеживать `meta.href` (без `meta.mediaType`).
+It also could expand arrays of values:
 
-Сейчас бэкэнд сам будет пытаться догадаться, кому какие события отправлять.
-
-## $set
-
-Изменённые поля в виде ключ-значение. Этот объект нужно просто вмержить в существующий. Не содержит изменения в референсах (кроме как если изменился сам референс).
- 
-## $unset
- 
-Удалённые поля. По ключам нужно удалить/обнулить соответствующие ключи в объекте.
- 
-## $pull
- 
-Следует удалить элементы из массива. Для массива референсов (e.g. `items`) возвращает `meta`, для массивов других типов -- само значение, которое нужно удалить.
-
-При использовании `meta` для фильтрации нужно использовать только `meta.href`.
-
-Например:
-
+```json
+{
+  "userIds": ["1", "2"]
+}
 ```
-  {
-    $pull: {
-        items: [
-            {
-                meta: {
-                    href: "/unused1"
-                }
-            },
-            {
-                meta: {
-                    href: "/unused2"
-                }
-            },
-        ]
+
+`GET /api/users?_expand=users`
+
+```json
+{
+  "userIds": ["1", "2"],
+  "users": [
+    {
+      "id": "1",
+      "name": "Alf"
+    },
+    {
+      "id": "2",
+      "name": "Bob"
     }
+  ]
+}
+```
+
+Or inside arrays:
+
+```json
+{
+  "values": [
+    {
+      "id": "valId",
+      "userId": "1",
+      "resourceId": "res-id"
+    }
+  ]
+}
+```
+
+`GET /api/values?_expand=values*user,values*resource`
+
+Or to fetch all `resources` and only the first `user`:
+
+`GET /api/values?_expand=values{[0].user,*resource}`
+
+Response will be something like:
+
+```json
+{
+  "values": [
+    {
+      "id": "valId",
+      "userId": "1",
+      "resourceId": "res-id",
+      "user": {
+        "id": "1"
+        //, ...
+      },
+      "resource": {
+        "id": "res-id"
+        //, ...
+      }
+    }
+  ]
+}
+```
+
+You can use several fields to resolve a single resource:
+
+```hocon
+expander {
+  base-url: "http://localhost:9000/api"
+  forward-headers: [authorization, accept-language]
+  set-headers {
+    accept: application/json
   }
-```
-
-Нужно удалить два элемента, сравнивая их по meta.
-
-```
-  {
-    $pull: {
-        items: [
-            "string 1",
-            {object: 2}
-        ]
+  patterns: [
+    {
+      url: "/resources/:resourceId/:userId?filter=:id"
+      path: "resource.subpath"
+      required {
+        "id": "some.jspath.inside.object.to.id"
+      }
+      optional {
+        "queryStringParam": "jspath.to.queryString"
+      }
     }
-  }
+  ]
+}
 ```
-
-А в этом случае нужно удалить два элемента, сравнивая их целиком.
- 
-## $prepend / $append
- 
-Действует полностью аналогично $pull, только, напротив, дополняет элементы -- в начало коллекции ($prepend) или в конец ($append).
- 
-Нужно также различать объекты, пришедшие с `meta` (в случае, если фронту нужно их отображать, следует сделать запрос с экспандом), и все прочие (просто добавить в массив).    
