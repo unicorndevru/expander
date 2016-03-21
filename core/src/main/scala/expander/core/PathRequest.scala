@@ -15,7 +15,7 @@ case class PathRequest(path: JsPath, params: Seq[(String, String)] = Seq.empty, 
       val idxIndex = given.path.indexWhere(_.isInstanceOf[IdxPathNode])
 
       if (searchIndex >= 0 && idxIndex == searchIndex && current.path.take(searchIndex) == given.path.take(searchIndex)) {
-        val newCurrent = JsPath(KeyPathNode(current.path(searchIndex).asInstanceOf[RecursiveSearch].key) +: current.path.drop(searchIndex + 1))")
+        val newCurrent = JsPath(KeyPathNode(current.path(searchIndex).asInstanceOf[RecursiveSearch].key) +: current.path.drop(searchIndex + 1))
         findPrefix(JsPath(given.path.drop(searchIndex + 1)), newCurrent).orElse(Some(newCurrent))
       } else None
     }
