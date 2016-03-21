@@ -5,13 +5,13 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.stream.Materializer
 import akka.util.ByteString
-import expander.core.{ PathRequest, Expander, ResourceContext, ExpandContext }
-import play.api.libs.json.{ Writes, Json, JsPath, JsValue }
+import expander.core.{ ExpandContext, Expander, PathRequest, ResourceContext }
+import play.api.libs.json.{ JsPath, JsValue, Json, Writes }
 
 import scala.collection.concurrent.TrieMap
-import scala.concurrent.{ Future, ExecutionContext }
+import scala.concurrent.{ ExecutionContext, Future }
 
-class JsonExpandContext(headers: collection.immutable.Seq[HttpHeader], expandContextProvider: JsValue ⇒ Map[JsPath, String], system: ActorSystem)(implicit mat: Materializer, ec: ExecutionContext) extends ExpandContext[JsValue] {
+class JsonExpandResolveContext(headers: collection.immutable.Seq[HttpHeader], expandContextProvider: JsValue ⇒ Map[JsPath, String], system: ActorSystem)(implicit mat: Materializer, ec: ExecutionContext) extends ExpandContext[JsValue] {
   ctx ⇒
 
   val http = Http(system)
@@ -19,8 +19,9 @@ class JsonExpandContext(headers: collection.immutable.Seq[HttpHeader], expandCon
   val cache = TrieMap[Uri, JsValue]()
 
   override def resources(root: JsValue) = expandContextProvider(root).mapValues { url ⇒
-    new ResourceContext[JsValue] {
-      override def resolve(params: Seq[(String, String)]) = {
+    ResourceContext[JsValue] {
+      params: Seq[(String, String)] ⇒
+
         val (continueExpand, passParams) = params.partition(_._1 == Expander.Key)
 
         val uri: Uri = url
@@ -54,7 +55,7 @@ class JsonExpandContext(headers: collection.immutable.Seq[HttpHeader], expandCon
             }
           }
         }
-      }
+
     }
 
   }

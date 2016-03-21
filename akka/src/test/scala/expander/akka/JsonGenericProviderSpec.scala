@@ -6,8 +6,8 @@ import play.api.libs.json._
 class JsonGenericProviderSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
   val provider = new JsonGenericProvider(Seq(
-    ResolvePattern("/things/:id", __ \ "thing", Map("id" → (__ \ "thingId")), Map("offset" → (__ \ "offset")), Set("offset")),
-    ResolvePattern("/some/:complex/:path/to", __ \ "some", Map("complex" → (__ \ "complexId"), "path" → (__ \ "pathId")))
+    ResolvePattern("/things/:id", __ \ "thing", Set("id"), Map("id" → (__ \ "thingId")), Map("offset" → (__ \ "offset"))),
+    ResolvePattern("/some/:complex/:path/to", __ \ "some", Set("complex", "path"), Map("complex" → (__ \ "complexId"), "path" → (__ \ "pathId")))
   ))
 
   "provider" should {

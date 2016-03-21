@@ -14,26 +14,16 @@ import expander.core.{ Expander, PathRequest }
 import play.api.libs.json._
 
 import scala.concurrent.Future
-import scala.language.implicitConversions
-import scala.util.Try
 
 object ExpanderFilter {
 
-  def forConfig(config: Config, system: ActorSystem)(route: Route): Route = {
-    import collection.JavaConversions._
-    val passHeaders = config.getStringList("expander.pass-headers").toSeq
-    val baseHost = Try(config.getString("expander.base-host")).toOption
-    val resolves = config.getObject("expander.resolves")
-    val resolvesMap = resolves.keySet().map(k ⇒ k → config.getString("expander.resolves." + k)).toMap
-
-    val patterns: Seq[ResolvePattern] = ???
-
-    apply(passHeaders, new JsonGenericProvider(patterns), system)(route)
-  }
+  def forConfig(config: Config, system: ActorSystem)(route: Route): Route =
+    apply(ExpanderFilterConfig.build(config, system))(route)
 
   private def hash(str: String) = MessageDigest.getInstance("MD5").digest(str.getBytes).map("%02x" format _).mkString
 
-  def apply(passHeaders: Seq[String], expandContextProvider: JsValue ⇒ Map[JsPath, String], system: ActorSystem)(route: Route): Route = {
+  def apply(conf: ExpanderFilterConfig)(route: Route): Route = {
+    import conf._
     val passHeadersLowerCase = passHeaders.map(_.toLowerCase).toSet
 
     parameter(Expander.Key.?) {
@@ -54,18 +44,22 @@ object ExpanderFilter {
                     case RouteResult.Complete(resp) if resp.entity.contentType == ContentTypes.`application/json` ⇒
 
                       val headers = reqCtx.request.headers.filter(h ⇒ passHeadersLowerCase(h.lowercaseName()))
-                      implicit lazy val expandContext = new JsonExpandContext(headers, expandContextProvider, system)
+                      implicit lazy val expandContext = expandContextProvider(headers)(mat, ectx)
 
                       resp.entity.dataBytes.runFold(ByteString(""))(_ ++ _).map(bs ⇒ Json.parse(bs.decodeString("UTF-8"))).flatMap(Expander(_, reqs: _*)).flatMap { json ⇒
                         val jsonString = Json.stringify(json)
 
-                        (get {
-                          conditional(EntityTag(hash(jsonString))) {
-                            mapResponseHeaders(_ :+ `Cache-Control`(`max-age`(0), `must-revalidate`)) {
-                              complete(resp.status → HttpEntity.Strict(ContentTypes.`application/json`, ByteString(jsonString)))
+                        val completeJson = complete(resp.status → HttpEntity.Strict(ContentTypes.`application/json`, ByteString(jsonString)))
+
+                        if (conditionalEnabled) {
+                          (get {
+                            conditional(EntityTag(hash(jsonString))) {
+                              mapResponseHeaders(_ :+ `Cache-Control`(`max-age`(0), `must-revalidate`)) {
+                                completeJson
+                              }
                             }
-                          }
-                        } ~ complete(resp.status → HttpEntity.Strict(ContentTypes.`application/json`, ByteString(jsonString)))) (reqCtx)
+                          } ~ completeJson) (reqCtx)
+                        } else completeJson(reqCtx)
 
                       }
 

@@ -21,8 +21,8 @@ class ExpanderSpec extends WordSpec with Matchers with ScalaFutures with TryValu
 
       val root = Wrapper("wrapId", "fooId", "barId")
 
-      expand(root, __ \ "sub" \ "foo", __ \ "sub" \ "bar").futureValue shouldBe Json.obj("id" → "wrapId", "fooId" → "fooId", "barId" → "barId", "sub" → Json.obj("foo" → Json.obj("id" → "fooId"), "bar" → Json.obj("id" → "barId")))
       expand(root, __ \ "sub").futureValue shouldBe Json.obj("id" → "wrapId", "fooId" → "fooId", "barId" → "barId", "sub" → Json.obj("foo" → Json.obj("id" → "fooId"), "bar" → Json.obj("id" → "barId")))
+      expand(root, __ \ "sub" \ "foo", __ \ "sub" \ "bar").futureValue shouldBe Json.obj("id" → "wrapId", "fooId" → "fooId", "barId" → "barId", "sub" → Json.obj("foo" → Json.obj("id" → "fooId"), "bar" → Json.obj("id" → "barId")))
       expand(root, __ \ "sub" \ "foo").futureValue shouldBe Json.obj("id" → "wrapId", "fooId" → "fooId", "barId" → "barId", "sub" → Json.obj("foo" → Json.obj("id" → "fooId")))
 
     }
