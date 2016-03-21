@@ -49,7 +49,11 @@ object ExpanderFilter {
                       resp.entity.dataBytes.runFold(ByteString(""))(_ ++ _).map(bs ⇒ Json.parse(bs.decodeString("UTF-8"))).flatMap(Expander(_, reqs: _*)).flatMap { json ⇒
                         val jsonString = Json.stringify(json)
 
-                        val completeJson = complete(resp.copy(entity = HttpEntity.Strict(ContentTypes.`application/json`, ByteString(jsonString))))
+                        val completeJson = complete(
+                          resp.copy(
+                            headers = resp.headers.filterNot(h => h.lowercaseName() == "etag" || h.lowercaseName() == "last-modified"),
+                            entity = HttpEntity.Strict(ContentTypes.`application/json`, ByteString(jsonString))
+                          ))
 
                         if (conditionalEnabled) {
                           (get {
