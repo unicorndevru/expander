@@ -14,14 +14,14 @@ import scala.util.Try
 
 case class ExpanderFilterConfig(
   expandContextProvider: collection.immutable.Seq[HttpHeader] ⇒ (Materializer, ExecutionContext) ⇒ ExpandContext[JsValue],
-  passHeaders:           Set[String],
+  forwardHeaders:        Set[String],
   conditionalEnabled:    Boolean
 )
 
 object ExpanderFilterConfig {
   def build(config: Config, system: ActorSystem): ExpanderFilterConfig = {
 
-    val passHeaders = config.getStringList("expander.pass-headers").toSet
+    val forwardHeaders = Try(config.getStringList("expander.forward-headers").toSet).getOrElse(Set.empty)
     val setHeadersConfOpt = Try(config.getObject("expander.set-headers")).toOption
 
     val conditionalEnabled = Try(config.getBoolean("expander.enable-conditional")).getOrElse(false)
@@ -43,7 +43,7 @@ object ExpanderFilterConfig {
 
     ExpanderFilterConfig(
       hrs ⇒ new JsonExpandResolveContext(hrs ++ setHeaders, new JsonGenericProvider(patterns), system)(_, _),
-      passHeaders,
+      forwardHeaders,
       conditionalEnabled = conditionalEnabled
     )
   }

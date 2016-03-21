@@ -68,7 +68,7 @@ class ExpanderFilterConfigSpec extends WordSpec with Matchers with BeforeAndAfte
           |     accept: application/json
           |  }
           |  enable-conditional: true
-          |  pass-headers: [authorization, accept-language]
+          |  forward-headers: [authorization, accept-language]
           |  base-url: "http://api:80/api/"
           |  patterns: [
           |     {
@@ -80,7 +80,7 @@ class ExpanderFilterConfigSpec extends WordSpec with Matchers with BeforeAndAfte
         """.stripMargin
       ), system)
 
-      efc.passHeaders shouldBe Set("authorization", "accept-language")
+      efc.forwardHeaders shouldBe Set("authorization", "accept-language")
       efc.conditionalEnabled shouldBe true
     }
 
