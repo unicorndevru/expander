@@ -16,7 +16,7 @@ class JsonExpandResolveContext(headers: collection.immutable.Seq[HttpHeader], ex
 
   val http = Http(system)
 
-  val cache = TrieMap[Uri, JsValue]()
+  val cache = TrieMap[Uri, Future[JsValue]]()
 
   override def resources(root: JsValue) = expandContextProvider(root).mapValues { url ⇒
     ResourceContext[JsValue] {
@@ -28,20 +28,19 @@ class JsonExpandResolveContext(headers: collection.immutable.Seq[HttpHeader], ex
         val q = passParams.foldLeft(uri.query())(_.+:(_))
         val rUri = uri.withQuery(q)
 
-        val jsonF = if (cache.contains(rUri)) {
-          Future.successful(cache(rUri))
-        } else {
-          http.singleRequest(HttpRequest(uri = rUri, headers = headers)).flatMap {
-            case HttpResponse(_, hs, entity, _) if entity.contentType == ContentTypes.`application/json` ⇒
-              entity.dataBytes.runFold(ByteString(""))(_ ++ _).map(bs ⇒ Json.parse(bs.decodeString("UTF-8")))
+        println("request: "+rUri)
 
-            case HttpResponse(status, _, _, _) ⇒
-              Future.successful(Json.obj("desc" → status.reason(), "status" → status.intValue()))
-          }.map { r ⇒
-            cache.update(rUri, r)
-            r
-          }
-        }
+        val jsonF = cache.getOrElseUpdate(rUri, http.singleRequest(HttpRequest(uri = rUri, headers = headers)).flatMap {
+          case HttpResponse(_, hs, entity, _) if entity.contentType == ContentTypes.`application/json` ⇒
+            println("response ok: "+entity)
+            entity.dataBytes.runFold(ByteString(""))(_ ++ _).map(bs ⇒ Json.parse(bs.decodeString("UTF-8")))
+
+          case HttpResponse(status, _, _, _) ⇒
+            println("response strange: "+status)
+            Future.successful(Json.obj("desc" → status.reason(), "status" → status.intValue()))
+        }.map { r ⇒
+          r
+        })
 
         if (continueExpand.isEmpty) {
           jsonF
