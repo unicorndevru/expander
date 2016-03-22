@@ -55,6 +55,7 @@ object Expander {
           case (kp, vs) ⇒
             val arrV = vs.collect {
               case (_, (IdxPathNode(idx), tail, v)) ⇒
+                println("tail = "+tail)
                 idx → (if (tail.path.isEmpty) v else tail.json.put(v).reads(Json.obj()).getOrElse(Json.obj()))
             }.sortBy(_._1).map(_._2)
             (kp, JsArray(arrV))
