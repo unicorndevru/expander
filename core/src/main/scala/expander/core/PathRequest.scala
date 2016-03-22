@@ -59,7 +59,7 @@ object PathRequest {
     import fastparse.all._
 
     val spaces = P(CharIn(" \t\n").rep)
-    val name = P(CharIn("1234567890qwertyuioplkjhgfdsazxcvbnmQWERTYUIOPLKJHGFDSAZXCVBNM").rep(min = 1).!)
+    val name = P(CharIn("_1234567890qwertyuioplkjhgfdsazxcvbnmQWERTYUIOPLKJHGFDSAZXCVBNM").rep(min = 1).!)
     val value = P(CharIn("1234567890qwertyuioplkjhgfdsazxcvbnmQWERTYUIOPLKJHGFDSAZXCVBNM-+_$%").rep(min = 1).!)
     val number = P(CharIn("01234567890").rep(min = 1).!).map(_.toInt)
 
