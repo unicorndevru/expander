@@ -123,7 +123,7 @@ class JsonGenericProvider(patterns: Seq[ResolvePattern]) extends (JsValue ⇒ Ma
 
   def apply(json: JsValue): Map[JsPath, String] = {
 
-    json match {
+    val ms = json match {
       case jo: JsObject ⇒
 
         val arrPatterns = collectArrayPatterns(jo)
@@ -144,8 +144,12 @@ class JsonGenericProvider(patterns: Seq[ResolvePattern]) extends (JsValue ⇒ Ma
         }.foldLeft(Map.empty[JsPath, String])(_ ++ _)
 
       case _ ⇒
-        Map.empty
+        Map.empty[JsPath,String]
     }
+
+    println("MATCHES "+ms)
+
+    ms
 
   }
 }

@@ -28,8 +28,6 @@ class JsonExpandResolveContext(headers: collection.immutable.Seq[HttpHeader], ex
         val q = passParams.foldLeft(uri.query())(_.+:(_))
         val rUri = uri.withQuery(q)
 
-        println("request: " + rUri)
-
         val jsonF = cache.getOrElseUpdate(rUri, http.singleRequest(HttpRequest(uri = rUri, headers = headers)).flatMap {
           case HttpResponse(_, hs, entity, _) if entity.contentType == ContentTypes.`application/json` ⇒
             println("response ok: " + entity)

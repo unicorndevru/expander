@@ -42,14 +42,20 @@ object testResources {
   implicit val recursiveW = Json.writes[Recursive]
 
   implicit object InsideResolve extends ResolveById[Inside] {
-    override def getById(id: String) = Future.successful(Inside(id))
+    override def getById(id: String) = {
+      println("get inside #" + id)
+      Future.successful(Inside(id))
+    }
   }
 
   implicit object ArrayExpandContext extends ExpandContext[ArrayWrapper] with ResolveById[ArrayWrapper] {
     override def resources(root: ArrayWrapper) =
       root.ids.zipWithIndex.map{ case (id, i) ⇒ (__ \ "arr" apply i) → leaf[Inside](id) }.toMap
 
-    override def getById(id: String) = Future.successful(ArrayWrapper(id, Seq("id1", "id2")))
+    override def getById(id: String) = {
+      println("get array #" + id)
+      Future.successful(ArrayWrapper(id, Seq("id1", "id2")))
+    }
   }
 
   implicit object WrapperExpandContext extends ExpandContext[Wrapper] with ResolveById[Wrapper] {
@@ -58,7 +64,10 @@ object testResources {
       (__ \ "sub" \ "bar") → leaf[Inside](root.barId)
     )
 
-    override def getById(id: String) = Future.successful(Wrapper(id, "expFoo", "expBar"))
+    override def getById(id: String) = {
+      println("get wrapper #" + id)
+      Future.successful(Wrapper(id, "expFoo", "expBar"))
+    }
   }
 
   implicit object ComplexExpandContext extends ExpandContext[Complex] {
