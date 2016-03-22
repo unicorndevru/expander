@@ -28,15 +28,15 @@ class JsonExpandResolveContext(headers: collection.immutable.Seq[HttpHeader], ex
         val q = passParams.foldLeft(uri.query())(_.+:(_))
         val rUri = uri.withQuery(q)
 
-        println("request: "+rUri)
+        println("request: " + rUri)
 
         val jsonF = cache.getOrElseUpdate(rUri, http.singleRequest(HttpRequest(uri = rUri, headers = headers)).flatMap {
           case HttpResponse(_, hs, entity, _) if entity.contentType == ContentTypes.`application/json` ⇒
-            println("response ok: "+entity)
+            println("response ok: " + entity)
             entity.dataBytes.runFold(ByteString(""))(_ ++ _).map(bs ⇒ Json.parse(bs.decodeString("UTF-8")))
 
           case HttpResponse(status, _, _, _) ⇒
-            println("response strange: "+status)
+            println("response strange: " + status)
             Future.successful(Json.obj("desc" → status.reason(), "status" → status.intValue()))
         }.map { r ⇒
           r
