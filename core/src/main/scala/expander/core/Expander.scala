@@ -61,9 +61,6 @@ object Expander {
 
     val pathMatches = resources.keys.map(p ⇒ p → reqs.flatMap(_.matchParams(p))).toMap
 
-    println("ROOT JSON = "+rootJson)
-    println("PM = "+pathMatches)
-
     if (pathMatches.forall(_._2.isEmpty)) {
       // nothing to resolve
       Future.successful(rootJson)

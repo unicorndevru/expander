@@ -16,7 +16,9 @@ import scala.concurrent.{ ExecutionContext, Future }
 class ExpanderFilterSpec extends WordSpec with Matchers with BeforeAndAfterAll with ScalaFutures with ScalatestRouteTest {
 
   val jsonGenericProvider = new JsonGenericProvider(Seq(
-    ResolvePattern("post/:postId", __ \ "resolved", Set("postId"), Map("postId" → (__ \ "postId")))
+    ResolvePattern("post/:postId", __ \ "resolved", Set("postId"), Map("postId" → (__ \ "postId"))),
+    ResolvePattern("images/:imageId", __ \ "image", Set("imageId"), Map("imageId" → (__ \ "imageId"))),
+    ResolvePattern("users/:userId", __ \ "user", Set("userId"), Map("userId" → (__ \ "userId")))
   ))
 
   val expandCtxProvider: collection.immutable.Seq[HttpHeader] ⇒ (Materializer, ExecutionContext) ⇒ ExpandContext[JsValue] = hrs ⇒ (_, _) ⇒ ExpandContext[JsValue] {
@@ -38,6 +40,8 @@ class ExpanderFilterSpec extends WordSpec with Matchers with BeforeAndAfterAll w
       complete(StatusCodes.OK → HttpEntity.Strict(ContentTypes.`application/json`, ByteString(Json.stringify(Json.obj("postId" → 1)))))
     } ~ path("posts") {
       complete(StatusCodes.OK → HttpEntity.Strict(ContentTypes.`application/json`, ByteString(Json.stringify(Json.obj("items" → Seq(Json.obj("postId" → 1), Json.obj("postId" → 2)))))))
+    } ~ path("awful") {
+      complete(StatusCodes.OK → HttpEntity.Strict(ContentTypes.`application/json`, ByteString(awfulJson)))
     }
   }
 
@@ -83,6 +87,19 @@ class ExpanderFilterSpec extends WordSpec with Matchers with BeforeAndAfterAll w
         (json \ "items" \\ "resolved").size shouldBe 2
         (json \ "items" \\ "params").map(_.as[Map[String, String]]) shouldBe Seq(Map("test" → "some"), Map("test" → "some"))
       }
+    }
+
+    "resolve awful json" in {
+
+      Get("/awful?_expand=items*user") ~> route ~> check {
+        status shouldBe StatusCodes.OK
+        val json = Json.parse(responseAs[String])
+
+        Json.prettyPrint(json)
+
+        (json \ "items" \\ "user").length shouldBe 16
+      }
+
     }
   }
 

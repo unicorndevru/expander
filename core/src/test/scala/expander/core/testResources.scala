@@ -43,7 +43,6 @@ object testResources {
 
   implicit object InsideResolve extends ResolveById[Inside] {
     override def getById(id: String) = {
-      println("get inside #" + id)
       Future.successful(Inside(id))
     }
   }
@@ -53,7 +52,6 @@ object testResources {
       root.ids.zipWithIndex.map{ case (id, i) ⇒ (__ \ "arr" apply i) → leaf[Inside](id) }.toMap
 
     override def getById(id: String) = {
-      println("get array #" + id)
       Future.successful(ArrayWrapper(id, Seq("id1", "id2")))
     }
   }
@@ -65,7 +63,6 @@ object testResources {
     )
 
     override def getById(id: String) = {
-      println("get wrapper #" + id)
       Future.successful(Wrapper(id, "expFoo", "expBar"))
     }
   }

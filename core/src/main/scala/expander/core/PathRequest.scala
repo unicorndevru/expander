@@ -13,15 +13,15 @@ case class PathRequest(path: JsPath, params: Seq[(String, String)] = Seq.empty, 
     } else {
       val searchIndex = current.path.indexWhere(_.isInstanceOf[RecursiveSearch])
       val idxIndex = given.path.indexWhere(_.isInstanceOf[IdxPathNode])
-
       if (searchIndex >= 0 && idxIndex == searchIndex && current.path.take(searchIndex) == given.path.take(searchIndex)) {
         val newCurrent = JsPath(KeyPathNode(current.path(searchIndex).asInstanceOf[RecursiveSearch].key) +: current.path.drop(searchIndex + 1))
-        findPrefix(JsPath(given.path.drop(searchIndex + 1)), newCurrent).orElse(Some(newCurrent))
+        findPrefix(JsPath(given.path.drop(searchIndex + 1)), newCurrent)
       } else None
     }
 
   def matchParams(given: JsPath): Option[Seq[(String, String)]] = {
     findPrefix(given).map{ r ⇒
+
       val expand = PathRequest.fold(
         inners.map(i ⇒
           i.copy(path = JsPath((r compose i.path).path match {

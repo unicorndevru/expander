@@ -41,5 +41,33 @@ class JsonGenericProviderSpec extends WordSpec with Matchers with BeforeAndAfter
       provider(Json.obj("pathId" → true, "complexIds" → Seq(1, 2, 3))) shouldBe Map((__ \ "somes" apply 0) → "/some/1/true/to", (__ \ "somes" apply 1) → "/some/2/true/to", (__ \ "somes" apply 2) → "/some/3/true/to")
 
     }
+
+    "resolve very complex" in {
+
+      val jsonGenericProvider = new JsonGenericProvider(Seq(
+        ResolvePattern("images/:imageId", __ \ "image", Set("imageId"), Map("imageId" → (__ \ "imageId"))),
+        ResolvePattern("users/:userId", __ \ "user", Set("userId"), Map("userId" → (__ \ "userId")))
+      ))
+
+      val res = jsonGenericProvider(Json.parse(awfulJson))
+
+      res.get((__ \ "items" apply 0) \ "user") shouldBe defined
+      res.get((__ \ "items" apply 1) \ "user") shouldBe defined
+      res.get((__ \ "items" apply 2) \ "user") shouldBe defined
+      res.get((__ \ "items" apply 3) \ "user") shouldBe defined
+      res.get((__ \ "items" apply 4) \ "user") shouldBe defined
+      res.get((__ \ "items" apply 5) \ "user") shouldBe defined
+      res.get((__ \ "items" apply 6) \ "user") shouldBe defined
+      res.get((__ \ "items" apply 7) \ "user") shouldBe defined
+      res.get((__ \ "items" apply 8) \ "user") shouldBe defined
+      res.get((__ \ "items" apply 9) \ "user") shouldBe defined
+      res.get((__ \ "items" apply 10) \ "user") shouldBe defined
+      res.get((__ \ "items" apply 11) \ "user") shouldBe defined
+      res.get((__ \ "items" apply 12) \ "user") shouldBe defined
+      res.get((__ \ "items" apply 13) \ "user") shouldBe defined
+      res.get((__ \ "items" apply 14) \ "user") shouldBe defined
+      res.get((__ \ "items" apply 15) \ "user") shouldBe defined
+
+    }
   }
 }

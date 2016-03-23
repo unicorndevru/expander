@@ -62,6 +62,9 @@ class PathRequestSpec extends WordSpec with Matchers with ScalaFutures with TryV
       one("user(c:d).field.sub(a:b)").matchParams(__ \ "user") shouldBe Some(Seq("c" → "d", "_expand" → ".field.sub(a:b)"))
       one("user*field.sub(a:b)").matchParams(__ \ "user" apply 0) shouldBe Some(Seq("_expand" → ".field.sub(a:b)"))
       one("user(c:d)*field.sub(a:b)").matchParams(__ \ "user" apply 0) shouldBe Some(Seq("c" → "d", "_expand" → ".field.sub(a:b)"))
+      one("items*user").matchParams((__ \ "items" apply 15) \ "images" apply 0) shouldBe empty
+      one("items*user").matchParams(((__ \ "items" apply 15) \ "offers" apply 0) \ "images") shouldBe empty
+      one("items*user").matchParams((__ \ "items" apply 15) \ "user") shouldBe Some(Seq())
     }
   }
 
