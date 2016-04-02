@@ -7,7 +7,7 @@ name := "expander"
 
 val expanderV = "0.4.0"
 
-val akkaV = "2.4.2"
+val akkaV = "2.4.3"
 
 val gitHeadCommitSha = settingKey[String]("current git commit SHA")
 
@@ -20,7 +20,7 @@ val commonScalariform = scalariformSettings :+ (ScalariformKeys.preferences := S
 
 val commons = Seq(
   organization := "ru.unicorndev",
-  scalaVersion := "2.11.7",
+  scalaVersion := "2.11.8",
   version := expanderV + "." +gitHeadCommitSha.value,
   resolvers ++= Seq(
     "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
