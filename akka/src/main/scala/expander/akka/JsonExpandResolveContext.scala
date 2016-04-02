@@ -5,11 +5,11 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.stream.Materializer
 import akka.util.ByteString
-import expander.core.{ ExpandContext, Expander, PathRequest, ResourceContext }
-import play.api.libs.json.{ JsPath, JsValue, Json, Writes }
+import expander.core.{ExpandContext, Expander, PathRequest, ResourceContext}
+import play.api.libs.json.{JsPath, JsValue, Json, Writes}
 
 import scala.collection.concurrent.TrieMap
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 
 class JsonExpandResolveContext(headers: collection.immutable.Seq[HttpHeader], expandContextProvider: JsValue ⇒ Map[JsPath, String], system: ActorSystem)(implicit mat: Materializer, ec: ExecutionContext) extends ExpandContext[JsValue] {
   ctx ⇒
@@ -30,11 +30,9 @@ class JsonExpandResolveContext(headers: collection.immutable.Seq[HttpHeader], ex
 
         val jsonF = cache.getOrElseUpdate(rUri, http.singleRequest(HttpRequest(uri = rUri, headers = headers)).flatMap {
           case HttpResponse(_, hs, entity, _) if entity.contentType == ContentTypes.`application/json` ⇒
-            println("response ok: " + entity)
             entity.dataBytes.runFold(ByteString(""))(_ ++ _).map(bs ⇒ Json.parse(bs.decodeString("UTF-8")))
 
           case HttpResponse(status, _, _, _) ⇒
-            println("response strange: " + status)
             Future.successful(Json.obj("desc" → status.reason(), "status" → status.intValue()))
         }.map { r ⇒
           r
