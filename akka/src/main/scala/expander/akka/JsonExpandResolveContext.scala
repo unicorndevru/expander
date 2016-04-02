@@ -5,11 +5,11 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.stream.Materializer
 import akka.util.ByteString
-import expander.core.{ExpandContext, Expander, PathRequest, ResourceContext}
-import play.api.libs.json.{JsPath, JsValue, Json, Writes}
+import expander.core.{ ExpandContext, Expander, PathRequest, ResourceContext }
+import play.api.libs.json.{ JsPath, JsValue, Json, Writes }
 
 import scala.collection.concurrent.TrieMap
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
 class JsonExpandResolveContext(headers: collection.immutable.Seq[HttpHeader], expandContextProvider: JsValue ⇒ Map[JsPath, String], system: ActorSystem)(implicit mat: Materializer, ec: ExecutionContext) extends ExpandContext[JsValue] {
   ctx ⇒
