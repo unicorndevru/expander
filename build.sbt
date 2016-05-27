@@ -5,9 +5,9 @@ import scalariform.formatter.preferences._
 
 name := "expander"
 
-val expanderV = "0.4.0"
+val expanderV = "0.4.1"
 
-val akkaV = "2.4.4"
+val akkaV = "2.4.6"
 
 val gitHeadCommitSha = settingKey[String]("current git commit SHA")
 
@@ -38,7 +38,7 @@ commons
 lazy val `expander-core` = (project in file("core")).settings(commons:_*).settings(
   name := "expander-core",
   libraryDependencies ++= Seq(
-    "com.typesafe.play" %% "play-json" % "2.5.0",
+    "com.typesafe.play" %% "play-json" % "2.5.3",
     "com.lihaoyi" %% "fastparse" % "0.3.7",
     "org.scalatest" %% "scalatest" % "2.2.5" % Test,
     "junit" % "junit" % "4.12" % Test
