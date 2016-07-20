@@ -35,6 +35,7 @@ class PathRequestSpec extends WordSpec with Matchers with ScalaFutures with TryV
       parse("user{test,some}") shouldBe Set(PathRequest(__ \ "user" \ "test"), PathRequest(__ \ "user" \ "some"))
       parse("user(a:b  ){test,some}") shouldBe Set(PathRequest(__ \ "user", Seq("a" → "b"), Seq(PathRequest(__ \ "test"), PathRequest(__ \ "some"))))
       parse("user(a:b) *    in{test,some}") shouldBe Set(PathRequest(__ \ "user", Seq("a" → "b"), Seq(PathRequest(__ \\ "in" \ "test"), PathRequest(__ \\ "in" \ "some"))))
+      parse("user(a:b){*test,*some}") shouldBe Set(PathRequest(__ \ "user", Seq("a" → "b"), Seq(PathRequest(__ \\ "test"), PathRequest(__ \\ "some"))))
       parse("user(a:b){test(  c :d),some}") shouldBe Set(PathRequest(__ \ "user", Seq("a" → "b"), Seq(PathRequest(__ \ "test", Seq("c" → "d")), PathRequest(__ \ "some"))))
       parse("user(a :b  ){  test(c:d)   *sub   ,some}") shouldBe Set(PathRequest(__ \ "user", Seq("a" → "b"), Seq(PathRequest(__ \ "test", Seq("c" → "d"), Seq(PathRequest(__ \\ "sub"))), PathRequest(__ \ "some"))))
     }
@@ -53,6 +54,7 @@ class PathRequestSpec extends WordSpec with Matchers with ScalaFutures with TryV
       parse("user(a:b).field(c:d)").mkString(",") shouldBe ".user(a:b).field(c:d)"
       parse("user(a:b).field(c:d),user.field").mkString(",") shouldBe ".user(a:b).field(c:d)"
       parse("user(a:b){field(c:d),user.field}").mkString(",") shouldBe ".user(a:b){.field(c:d),.user.field}"
+      parse("user(a:b){*field(c:d),*user.field}").mkString(",") shouldBe ".user(a:b){*field(c:d),*user.field}"
     }
 
     "gen match params" in {

@@ -7,7 +7,7 @@ name := "expander"
 
 val expanderV = "0.4.1"
 
-val akkaV = "2.4.6"
+val akkaV = "2.4.8"
 
 val gitHeadCommitSha = settingKey[String]("current git commit SHA")
 
