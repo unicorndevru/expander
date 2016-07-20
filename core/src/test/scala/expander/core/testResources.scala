@@ -13,12 +13,14 @@ object testResources {
 
   protected def leaf[TT: Writes: ResolveById](id: String) =
     ResourceContext[TT] {
-      params ⇒ implicitly[ResolveById[TT]].getById(id).map(implicitly[Writes[TT]].writes)
+      params ⇒
+        implicitly[ResolveById[TT]].getById(id).map(implicitly[Writes[TT]].writes)
     }
 
   protected def ref[TT: Writes: ResolveById: ExpandContext](id: String) =
     ResourceContext[TT] {
-      params ⇒ implicitly[ResolveById[TT]].getById(id).flatMap(Expander(_, params.toMap.get(Expander.Key).map(PathRequest.parse).getOrElse(Seq.empty): _*))
+      params ⇒
+        implicitly[ResolveById[TT]].getById(id).flatMap(Expander(_, params.groupBy(_._1).get(Expander.Key).map(kv ⇒ kv.flatMap(v ⇒ PathRequest.parse(v._2))).getOrElse(Seq.empty): _*))
     }
 
   case class Wrapper(id: String, fooId: String, barId: String)
@@ -59,7 +61,9 @@ object testResources {
   implicit object WrapperExpandContext extends ExpandContext[Wrapper] with ResolveById[Wrapper] {
     override def resources(root: Wrapper) = Map(
       (__ \ "sub" \ "foo") → leaf[Inside](root.fooId),
-      (__ \ "sub" \ "bar") → leaf[Inside](root.barId)
+      (__ \ "sub" \ "bar") → leaf[Inside](root.barId),
+      (__ \ "fooo") → leaf[Inside](root.fooId),
+      (__ \ "baar") → leaf[Inside](root.barId)
     )
 
     override def getById(id: String) = {

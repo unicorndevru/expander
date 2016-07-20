@@ -55,6 +55,9 @@ class PathRequestSpec extends WordSpec with Matchers with ScalaFutures with TryV
       parse("user(a:b).field(c:d),user.field").mkString(",") shouldBe ".user(a:b).field(c:d)"
       parse("user(a:b){field(c:d),user.field}").mkString(",") shouldBe ".user(a:b){.field(c:d),.user.field}"
       parse("user(a:b){*field(c:d),*user.field}").mkString(",") shouldBe ".user(a:b){*field(c:d),*user.field}"
+      parse("values*user").mkString(",") shouldBe ".values*user"
+      parse("values{*user}").mkString(",") shouldBe ".values*user"
+      parse("values{*user,*inSeries}").mkString(",") shouldBe ".values*user,.values*inSeries"
     }
 
     "gen match params" in {
@@ -67,6 +70,8 @@ class PathRequestSpec extends WordSpec with Matchers with ScalaFutures with TryV
       one("items*user").matchParams((__ \ "items" apply 15) \ "images" apply 0) shouldBe empty
       one("items*user").matchParams(((__ \ "items" apply 15) \ "offers" apply 0) \ "images") shouldBe empty
       one("items*user").matchParams((__ \ "items" apply 15) \ "user") shouldBe Some(Seq())
+      one("items{*user}").matchParams((__ \ "items" apply 15) \ "user") shouldBe Some(Seq())
+      parse("items{*user,*other}").exists(_.matchParams((__ \ "items" apply 15) \ "user").nonEmpty) shouldBe true
     }
   }
 

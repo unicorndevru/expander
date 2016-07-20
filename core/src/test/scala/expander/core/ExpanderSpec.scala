@@ -37,7 +37,7 @@ class ExpanderSpec extends WordSpec with Matchers with ScalaFutures with TryValu
       expand(root).futureValue shouldBe Json.obj("id" → "arrId", "ids" → Seq("fooId", "barId"))
       expand(root, __ \ "arr").futureValue shouldBe Json.obj("id" → "arrId", "ids" → Seq("fooId", "barId"), "arr" → Seq(Json.obj("id" → "fooId"), Json.obj("id" → "barId")))
       expand(root, __ \ "arr" apply 0).futureValue shouldBe Json.obj("id" → "arrId", "ids" → Seq("fooId", "barId"), "arr" → Seq(Json.obj("id" → "fooId")))
-      expand(root, __ \ "arr" apply 1).futureValue shouldBe Json.obj("id" → "arrId", "ids" → Seq("fooId", "barId"), "arr" → Seq(Json.obj("id" → "barId")))
+      expand(root, __ \ "arr" apply 1).futureValue shouldBe Json.obj("id" → "arrId", "ids" → Seq("fooId", "barId"), "arr" → Seq(Json.obj(), Json.obj("id" → "barId")))
 
     }
 
@@ -65,7 +65,7 @@ class ExpanderSpec extends WordSpec with Matchers with ScalaFutures with TryValu
       expand(root, (__ \ "arr" apply 0) \ "sub" \ "bar", __ \ "arr").futureValue shouldBe Json.obj("ids" → Seq("id1", "id2"), "arr" → Seq(Json.obj("id" → "id1", "fooId" → "expFoo", "barId" → "expBar", "sub" → Json.obj("bar" → Json.obj("id" → "expBar"))), Json.obj("id" → "id2", "fooId" → "expFoo", "barId" → "expBar")))
       expand(root, __ \ "arr" \\ "sub").futureValue shouldBe Json.obj("ids" → Seq("id1", "id2"), "arr" → Seq(Json.obj("id" → "id1", "fooId" → "expFoo", "barId" → "expBar", "sub" → Json.obj("bar" → Json.obj("id" → "expBar"), "foo" → Json.obj("id" → "expFoo"))), Json.obj("id" → "id2", "fooId" → "expFoo", "barId" → "expBar", "sub" → Json.obj("bar" → Json.obj("id" → "expBar"), "foo" → Json.obj("id" → "expFoo")))))
       expand(root, __ \ "arr" \\ "sub" \ "bar").futureValue shouldBe Json.obj("ids" → Seq("id1", "id2"), "arr" → Seq(Json.obj("id" → "id1", "fooId" → "expFoo", "barId" → "expBar", "sub" → Json.obj("bar" → Json.obj("id" → "expBar"))), Json.obj("id" → "id2", "fooId" → "expFoo", "barId" → "expBar", "sub" → Json.obj("bar" → Json.obj("id" → "expBar")))))
-
+      expand(root, __ \ "arr" \\ "fooo", __ \ "arr" \\ "baar").futureValue shouldBe Json.obj("ids" → Seq("id1", "id2"), "arr" → Seq(Json.obj("id" → "id1", "fooId" → "expFoo", "barId" → "expBar", "baar" → Json.obj("id" → "expBar"), "fooo" → Json.obj("id" → "expFoo")), Json.obj("id" → "id2", "fooId" → "expFoo", "barId" → "expBar", "baar" → Json.obj("id" → "expBar"), "fooo" → Json.obj("id" → "expFoo"))))
     }
   }
 

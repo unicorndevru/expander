@@ -39,7 +39,7 @@ class ExpanderFilterSpec extends WordSpec with Matchers with BeforeAndAfterAll w
     path("post") {
       complete(StatusCodes.OK → HttpEntity.Strict(ContentTypes.`application/json`, ByteString(Json.stringify(Json.obj("postId" → 1)))))
     } ~ path("posts") {
-      complete(StatusCodes.OK → HttpEntity.Strict(ContentTypes.`application/json`, ByteString(Json.stringify(Json.obj("items" → Seq(Json.obj("postId" → 1), Json.obj("postId" → 2)))))))
+      complete(StatusCodes.OK → HttpEntity.Strict(ContentTypes.`application/json`, ByteString(Json.stringify(Json.obj("items" → Seq(Json.obj("notToExpand" → true), Json.obj("postId" → 1, "imageId" → "i1"), Json.obj("postId" → 2, "imageId" → "i2"), Json.obj("imageId" → "i3")))))))
     } ~ path("awful") {
       complete(StatusCodes.OK → HttpEntity.Strict(ContentTypes.`application/json`, ByteString(awfulJson)))
     }
@@ -78,14 +78,40 @@ class ExpanderFilterSpec extends WordSpec with Matchers with BeforeAndAfterAll w
         (json \ "items" \\ "postId").map(_.as[Int]) shouldBe Seq(1, 2)
         (json \ "items" \\ "resolved").size shouldBe 2
       }
+      Get("/posts?_expand=items*image") ~> route ~> check {
+        status shouldBe StatusCodes.OK
+        val json = Json.parse(responseAs[String])
+        (json \ "items" \\ "postId").map(_.as[Int]) shouldBe Seq(1, 2)
+        (json \ "items" \\ "image").size shouldBe 3
+      }
 
       Get("/posts?_expand=items*resolved(test:some)") ~> route ~> check {
         status shouldBe StatusCodes.OK
         val json = Json.parse(responseAs[String])
-        (json \ "items").as[JsArray].value.size shouldBe 2
+        (json \ "items").as[JsArray].value.size shouldBe 3
         (json \ "items" \\ "postId").map(_.as[Int]) shouldBe Seq(1, 2)
         (json \ "items" \\ "resolved").size shouldBe 2
         (json \ "items" \\ "params").map(_.as[Map[String, String]]) shouldBe Seq(Map("test" → "some"), Map("test" → "some"))
+      }
+    }
+
+    "resolve complex list" in {
+      Get("/posts?_expand=items*resolved,items*image") ~> route ~> check {
+        status shouldBe StatusCodes.OK
+        val json = Json.parse(responseAs[String])
+        (json \ "items").as[JsArray].value.size shouldBe 4
+        (json \ "items" \\ "postId").map(_.as[Int]) shouldBe Seq(1, 2)
+        (json \ "items" \\ "resolved").size shouldBe 2
+        (json \ "items" \\ "image").size shouldBe 3
+      }
+      Get("/posts?_expand=items{*resolved,*image}") ~> route ~> check {
+        status shouldBe StatusCodes.OK
+        val json = Json.parse(responseAs[String])
+        (json \ "items").as[JsArray].value.size shouldBe 4
+        (json \ "items" \\ "postId").map(_.as[Int]) shouldBe Seq(1, 2)
+        (json \ "items").as[JsArray].head.get shouldBe Json.obj("notToExpand" → true)
+        (json \ "items" \\ "resolved").size shouldBe 2
+        (json \ "items" \\ "image").size shouldBe 3
       }
     }
 

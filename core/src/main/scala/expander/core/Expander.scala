@@ -81,11 +81,19 @@ object Expander {
             (JsPath(kp), (idx, JsPath(tail), v))
         }.groupBy(_._1).map {
           case (kp, vs) ⇒
-            val arrV = vs.collect {
+            val mapV = vs.collect {
               case (_, (IdxPathNode(idx), tail, v)) ⇒
                 idx → setInsideArray(tail, v)
-            }.sortBy(_._1).map(_._2)
-            (kp, JsArray(arrV))
+            }.groupBy(_._1).map {
+              case (i, ivs) ⇒
+                i → ivs.map(_._2).reduce[JsValue]{
+                  case (o1: JsObject, o2: JsObject) ⇒ merge(o1, o2)
+                  case (ov, _)                      ⇒ ov
+                }
+            }
+            val maxK = mapV.keySet.max
+
+            (kp, JsArray((0 to maxK).map(mapV.getOrElse(_, Json.obj()))))
         }.toSeq
 
         (keyPaths ++ arrToKeyPaths).foldLeft(rootJson.as[JsObject]) {
