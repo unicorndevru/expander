@@ -60,14 +60,14 @@ class ExpanderFilterSpec extends WordSpec with Matchers with BeforeAndAfterAll w
         status shouldBe StatusCodes.OK
         val json = Json.parse(responseAs[String])
         (json \ "resolved" \ "status").as[String] shouldBe "ok"
-        (json \ "resolved" \ "headers").as[JsObject] shouldBe Json.obj()
+        (json \ "resolved" \ "headers").as[JsObject] shouldBe Json.obj("x-expanding-uri" → "http://example.com/post?_expand=resolved")
       }
 
       Get("/post?_expand=resolved").addHeader(`Accept-Language`(LanguageRange(Language("ru")))) ~> route ~> check {
         status shouldBe StatusCodes.OK
         val json = Json.parse(responseAs[String])
         (json \ "resolved" \ "status").as[String] shouldBe "ok"
-        (json \ "resolved" \ "headers").as[JsObject] shouldBe Json.obj("accept-language" → "ru")
+        (json \ "resolved" \ "headers").as[JsObject] shouldBe Json.obj("accept-language" → "ru", "x-expanding-uri" → "http://example.com/post?_expand=resolved")
       }
     }
 
