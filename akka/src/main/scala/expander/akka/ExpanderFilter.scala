@@ -5,13 +5,13 @@ import java.security.MessageDigest
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.CacheDirectives.{`max-age`, `must-revalidate`}
-import akka.http.scaladsl.model.headers.{CustomHeader, EntityTag, `Cache-Control`, `X-Forwarded-For`}
+import akka.http.scaladsl.model.headers.CacheDirectives.{ `max-age`, `must-revalidate` }
+import akka.http.scaladsl.model.headers.{ CustomHeader, EntityTag, `Cache-Control`, `X-Forwarded-For` }
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.{Route, RouteResult}
+import akka.http.scaladsl.server.{ Route, RouteResult }
 import akka.util.ByteString
 import com.typesafe.config.Config
-import expander.core.{Expander, PathRequest}
+import expander.core.{ Expander, PathRequest }
 import play.api.libs.json._
 
 import scala.concurrent.Future
