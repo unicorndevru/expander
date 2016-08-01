@@ -1,16 +1,17 @@
 package expander.akka
 
+import java.net.InetAddress
 import java.security.MessageDigest
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.CacheDirectives.{ `max-age`, `must-revalidate` }
-import akka.http.scaladsl.model.headers.{ CustomHeader, EntityTag, `Cache-Control` }
+import akka.http.scaladsl.model.headers.CacheDirectives.{`max-age`, `must-revalidate`}
+import akka.http.scaladsl.model.headers.{CustomHeader, EntityTag, `Cache-Control`, `X-Forwarded-For`}
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.{ Route, RouteResult }
+import akka.http.scaladsl.server.{Route, RouteResult}
 import akka.util.ByteString
 import com.typesafe.config.Config
-import expander.core.{ Expander, PathRequest }
+import expander.core.{Expander, PathRequest}
 import play.api.libs.json._
 
 import scala.concurrent.Future
@@ -48,9 +49,9 @@ object ExpanderFilter {
           extractRequestContext { reqCtx ⇒
             extractMaterializer { implicit mat ⇒
               extractExecutionContext { implicit ectx ⇒
-                (extractClientIP.map(_.toOption.map(_.getHostName)) | provide(Option.empty[String])) { clientIp ⇒
+                (extractClientIP.map(_.toOption) | provide(Option.empty[InetAddress])) { clientIp ⇒
 
-                  val expandingHeaders: Seq[HttpHeader] = clientIp.map(ip ⇒ header("X-Expand-For-Ip", ip)).toSeq :+ header("X-Expanding-Uri", reqCtx.request.uri.toString)
+                  val expandingHeaders: Seq[HttpHeader] = clientIp.map(ip ⇒ `X-Forwarded-For`(RemoteAddress(ip))).toSeq :+ header("X-Expanding-Uri", reqCtx.request.uri.toString)
 
                   mapRouteResultFuture {
                     _.flatMap {
