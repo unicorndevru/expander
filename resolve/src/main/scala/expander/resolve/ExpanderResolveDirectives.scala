@@ -2,7 +2,6 @@ package expander.resolve
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
-import akka.stream.scaladsl.{ Sink, Source }
 
 import scala.collection.concurrent.TrieMap
 import scala.concurrent.duration._
@@ -29,21 +28,16 @@ class ExpanderResolveDirectives(er: ExpanderResolve, sessionsTtl: Int = 20) {
         extractExecutionContext.flatMap { implicit ctx ⇒
           onSuccess(er.consul.createSession(flags, name, sessionsTtl, checks)).flatMap { s ⇒
             extractLog.flatMap { log ⇒
-              extractMaterializer.flatMap { implicit mat ⇒
+              extractActorSystem.flatMap { system ⇒
 
-                Source
-                  .empty[Unit]
-                  .keepAlive((sessionsTtl / 2).seconds, () ⇒ ())
-                  .mapAsync(1){ _ ⇒
-                    println(Console.BLUE + "Trying to renew " + name + " : " + s + Console.RESET)
-                    er.consul.renewSession(s)
-                  }
-                  .runWith(Sink.last)
-                  .onComplete{
-                    r ⇒
-                      println(Console.RED + r + Console.RESET)
-                      sessionIds.remove(name)
-                  }
+                system
+                  .scheduler
+                  .schedule((sessionsTtl / 2).seconds, (sessionsTtl / 2).seconds)(er.consul.renewSession(s)
+                    .failed.foreach{
+                      e ⇒
+                        log.error(e, "Cannot renew session")
+                        sessionIds.remove(name, s)
+                    })
 
                 sessionIds(name) = s
                 provide(s)
