@@ -87,7 +87,7 @@ class Consul(
         "Checks" → (checks + "serfHealth"),
         "Flags" → flags,
         "Behavior" → "delete",
-        "TTL" -> s"${ttl}s"
+        "TTL" → s"${ttl}s"
       )))
     )).flatMap(resp ⇒
       resp.entity.dataBytes

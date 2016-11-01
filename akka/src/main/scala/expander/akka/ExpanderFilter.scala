@@ -73,9 +73,9 @@ class ExpanderFilter(conf: ExpanderFilterConfig)(implicit system: ActorSystem, m
                           val completeJson = complete(
                             resp.copy(
                               headers = resp.headers.filterNot(h ⇒
-                                h.lowercaseName() == "etag" ||
-                                  h.lowercaseName() == "last-modified" ||
-                                  h.lowercaseName() == "content-encoding"),
+                                h.is("etag") ||
+                                  h.is("last-modified") ||
+                                  h.is("content-encoding")),
                               entity = HttpEntity.Strict(ContentTypes.`application/json`, ByteString(jsonString))
                             )
                           )

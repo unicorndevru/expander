@@ -19,7 +19,7 @@ class ExpanderResolve(
   val http = Http(system)
 
   def resolver(implicit ctx: ExecutionContext): HttpRequest ⇒ Future[HttpResponse] =
-    req ⇒ process(req).map{ r ⇒ println(Console.BLUE + r + Console.RESET); r }.flatMap(r ⇒ http.singleRequest(r))
+    req ⇒ process(req).flatMap(r ⇒ http.singleRequest(r))
 
   def extractKey(uri: Uri): Option[String] = {
     val path = uri.path.toString()
@@ -40,7 +40,7 @@ class ExpanderResolve(
         // Pattern is found
         // Make matcher. It's used for path-modify substitutions as well as for consul key computation
         val r = p.path.pattern.matcher(path)
-        println(p)
+
         // Substitute what we can
         val uriRes = uri.copy(
           scheme = "http",

@@ -28,15 +28,17 @@ class ExpanderResolveDirectives(er: ExpanderResolve, sessionsTtl: Int = 20) {
       case None ⇒
         extractExecutionContext.flatMap { implicit ctx ⇒
           onSuccess(er.consul.createSession(flags, name, sessionsTtl, checks)).flatMap { s ⇒
-            extractLog.flatMap { log =>
+            extractLog.flatMap { log ⇒
+              extractMaterializer.flatMap { implicit mat ⇒
 
-              Source
-                .empty[Unit]
-                .keepAlive((sessionsTtl - 3).seconds, () => ())
-                .runForeach(_ => er.consul.renewSession(s).foreach(_ => log.debug("Pinged: "+name+ " id="+s)))
+                Source
+                  .empty[Unit]
+                  .keepAlive((sessionsTtl - 3).seconds, () ⇒ ())
+                  .runForeach(_ ⇒ er.consul.renewSession(s).foreach(_ ⇒ log.debug("Pinged: " + name + " id=" + s)))
 
-              sessionIds(name) = s
-              provide(s)
+                sessionIds(name) = s
+                provide(s)
+              }
             }
           }
         }
