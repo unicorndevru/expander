@@ -6,8 +6,8 @@ import play.api.libs.json._
 class JsonGenericProviderSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
   val provider = new JsonGenericProvider(Seq(
-    ResolvePattern("/things/:id", __ \ "thing", Set("id"), Map("id" → (__ \ "thingId")), Map("offset" → (__ \ "offset"))),
-    ResolvePattern("/some/:complex/:path/to", __ \ "some", Set("complex", "path"), Map("complex" → (__ \ "complexId"), "path" → (__ \ "pathId")))
+    ExpandPattern("/things/:id", __ \ "thing", Set("id"), Map("id" → (__ \ "thingId")), Map("offset" → (__ \ "offset"))),
+    ExpandPattern("/some/:complex/:path/to", __ \ "some", Set("complex", "path"), Map("complex" → (__ \ "complexId"), "path" → (__ \ "pathId")))
   ))
 
   "provider" should {
@@ -45,8 +45,8 @@ class JsonGenericProviderSpec extends WordSpec with Matchers with BeforeAndAfter
     "resolve very complex" in {
 
       val jsonGenericProvider = new JsonGenericProvider(Seq(
-        ResolvePattern("images/:imageId", __ \ "image", Set("imageId"), Map("imageId" → (__ \ "imageId"))),
-        ResolvePattern("users/:userId", __ \ "user", Set("userId"), Map("userId" → (__ \ "userId")))
+        ExpandPattern("images/:imageId", __ \ "image", Set("imageId"), Map("imageId" → (__ \ "imageId"))),
+        ExpandPattern("users/:userId", __ \ "user", Set("userId"), Map("userId" → (__ \ "userId")))
       ))
 
       val res = jsonGenericProvider(Json.parse(awfulJson))

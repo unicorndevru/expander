@@ -6,6 +6,7 @@ import akka.http.scaladsl.model.headers.CustomHeader
 import akka.stream.Materializer
 import com.typesafe.config.Config
 import expander.core.{ ExpandContext, PathRequest }
+import expander.resolve.ExpanderResolve
 import play.api.libs.json.JsValue
 
 import scala.collection.JavaConversions._
@@ -13,13 +14,15 @@ import scala.concurrent.ExecutionContext
 import scala.util.Try
 
 case class ExpanderFilterConfig(
-  expandContextProvider: collection.immutable.Seq[HttpHeader] ⇒ (Materializer, ExecutionContext) ⇒ ExpandContext[JsValue],
+  expandContextProvider: collection.immutable.Seq[HttpHeader] ⇒ ExecutionContext ⇒ ExpandContext[JsValue],
   forwardHeaders:        Set[String],
   conditionalEnabled:    Boolean
 )
 
 object ExpanderFilterConfig {
-  def build(config: Config, system: ActorSystem): ExpanderFilterConfig = {
+  def build(config: Config)(implicit system: ActorSystem, mat: Materializer): ExpanderFilterConfig = {
+
+    val httpResolve = ExpanderResolve.forConfig(config)
 
     val forwardHeaders = Try(config.getStringList("expander.forward-headers").toSet).getOrElse(Set.empty)
     val setHeadersConfOpt = Try(config.getObject("expander.set-headers")).toOption
@@ -39,10 +42,10 @@ object ExpanderFilterConfig {
         }
       }.toSeq
     }
-    val patterns: Seq[ResolvePattern] = readPatterns(config)
+    val patterns: Seq[ExpandPattern] = readPatterns(config)
 
     ExpanderFilterConfig(
-      hrs ⇒ new JsonExpandResolveContext(hrs ++ setHeaders, new JsonGenericProvider(patterns), system)(_, _),
+      hrs ⇒ ec ⇒ new JsonExpandResolveContext(hrs ++ setHeaders, new JsonGenericProvider(patterns), httpResolve.resolver(ec))(mat, ec),
       forwardHeaders,
       conditionalEnabled = conditionalEnabled
     )
@@ -50,12 +53,11 @@ object ExpanderFilterConfig {
 
   private val urlPatternR = ":([a-zA-Z]+)".r
 
-  def readPatterns(config: Config): Seq[ResolvePattern] = {
+  def readPatterns(config: Config): Seq[ExpandPattern] = {
     import PathRequest.parsePath
-    val baseUrl = Try(config.getString("expander.base-url")).getOrElse("")
     Try(config.getConfigList("expander.patterns").toSeq).getOrElse(Seq.empty).flatMap { obj ⇒
       for {
-        url ← Try(baseUrl + obj.getString("url")).toOption
+        url ← Try(obj.getString("url")).toOption
 
         urlKeys = urlPatternR.findAllMatchIn(url).map(m ⇒ m.group(1)).toSet
 
@@ -73,7 +75,7 @@ object ExpanderFilterConfig {
           Try(obj.getString("optional." + k)).toOption.flatMap(parsePath).map(k → _)
         }.toMap).getOrElse(Map.empty)
 
-      } yield ResolvePattern(
+      } yield ExpandPattern(
         url,
         path,
         urlKeys,

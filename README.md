@@ -2,8 +2,11 @@
 
 [![Build Status](https://travis-ci.org/unicorndevru/expander.svg?branch=master)](https://travis-ci.org/unicorndevru/expander)
 
+[![](https://jitpack.io/v/unicorndevru/expander.svg)](https://jitpack.io/#unicorndevru/expander)
+
+
 A tool to build composed JSON responses fetching several destinations.
-Expander is to be commpared with `GraphQL`, but offers less with the smaller effort: Expander is config-based and extremely simple to set up and use.
+Expander is to be compared with `GraphQL`, but offers less with the smaller effort: Expander is config-based and extremely simple to set up and use.
 
 Build with _Scala_ and _akka-http_, but can also be used as a proxy.
 

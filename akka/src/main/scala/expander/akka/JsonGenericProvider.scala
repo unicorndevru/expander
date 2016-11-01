@@ -6,7 +6,7 @@ import play.api.libs.json._
 
 import scala.language.implicitConversions
 
-class JsonGenericProvider(patterns: Seq[ResolvePattern]) extends (JsValue ⇒ Map[JsPath, String]) {
+class JsonGenericProvider(patterns: Seq[ExpandPattern]) extends (JsValue ⇒ Map[JsPath, String]) {
 
   val readsToString: Reads[String] = Reads[String] {
     case JsString(v)  ⇒ JsSuccess(v)
@@ -29,7 +29,7 @@ class JsonGenericProvider(patterns: Seq[ResolvePattern]) extends (JsValue ⇒ Ma
       prefix.toString + queryParams.mapValues(URLEncoder.encode(_, "UTF-8")).map(kv ⇒ kv._1 + "=" + kv._2).mkString("&")
     }
 
-  def collectArrayPatterns(jsObject: JsObject): Seq[ResolvePattern] = {
+  def collectArrayPatterns(jsObject: JsObject): Seq[ExpandPattern] = {
     val arrayMatches = jsObject.value.collect {
       case (k, jsArray: JsArray) if isPlural(k) ⇒
         toSingular(k) → jsArray.value.map(readsToString.reads).zipWithIndex.collect {
@@ -89,7 +89,7 @@ class JsonGenericProvider(patterns: Seq[ResolvePattern]) extends (JsValue ⇒ Ma
 
   }.flatten
 
-  def collectMatches(jsObject: JsObject, addPatterns: Seq[ResolvePattern]): Map[JsPath, String] = (patterns ++ addPatterns).flatMap { pattern ⇒
+  def collectMatches(jsObject: JsObject, addPatterns: Seq[ExpandPattern]): Map[JsPath, String] = (patterns ++ addPatterns).flatMap { pattern ⇒
 
     val requiredOpt = pattern.required.mapValues(p ⇒ p.json.pick.reads(jsObject).flatMap(readsToString.reads).asOpt)
 

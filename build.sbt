@@ -5,9 +5,13 @@ import scalariform.formatter.preferences._
 
 name := "expander"
 
-val expanderV = "0.4.2"
+val expanderV = "0.5.0"
 
-val akkaV = "2.4.8"
+val akkaV = "2.4.12"
+
+val akkaHttpV = "2.4.11"
+
+val json = "com.typesafe.play" %% "play-json" % "2.5.9"
 
 val gitHeadCommitSha = settingKey[String]("current git commit SHA")
 
@@ -38,22 +42,31 @@ commons
 lazy val `expander-core` = (project in file("core")).settings(commons:_*).settings(
   name := "expander-core",
   libraryDependencies ++= Seq(
-    "com.typesafe.play" %% "play-json" % "2.5.4",
-    "com.lihaoyi" %% "fastparse" % "0.3.7",
-    "org.scalatest" %% "scalatest" % "2.2.5" % Test,
-    "junit" % "junit" % "4.12" % Test
+    json,
+    "com.lihaoyi" %% "fastparse" % "0.4.1",
+    "org.scalatest" %% "scalatest" % "3.0.0" % Test
   )
 )
 
 lazy val `expander-akka` = (project in file("akka")).settings(commons:_*).settings(
   name := "expander-akka",
   libraryDependencies ++= Seq(
-    "com.typesafe.akka" %% "akka-http-experimental" % akkaV,
-    "com.typesafe.akka" %% "akka-http-testkit" % akkaV % Test,
-    "org.scalatest" %% "scalatest" % "2.2.5" % Test
+    "com.typesafe.akka" %% "akka-http-experimental" % akkaHttpV % Provided,
+    "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpV % Test,
+    "org.scalatest" %% "scalatest" % "3.0.0" % Test
   )
-) .dependsOn(`expander-core`)
-  .aggregate(`expander-core`)
+) .dependsOn(`expander-core`, `resolve`)
+  .aggregate(`expander-core`, `resolve`)
+
+lazy val `resolve` = (project in file("resolve")).settings(commons:_*).settings(
+  name := "resolve",
+  libraryDependencies ++= Seq(
+    json,
+    "com.typesafe.akka" %% "akka-http-experimental" % akkaHttpV,
+    "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpV % Test,
+    "org.scalatest" %% "scalatest" % "3.0.0" % Test
+  )
+)
 
 lazy val `expander` = (project in file("."))
   .dependsOn(`expander-akka`, `expander-core`)

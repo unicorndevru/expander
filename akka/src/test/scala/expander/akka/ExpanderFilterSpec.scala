@@ -16,12 +16,12 @@ import scala.concurrent.{ ExecutionContext, Future }
 class ExpanderFilterSpec extends WordSpec with Matchers with BeforeAndAfterAll with ScalaFutures with ScalatestRouteTest {
 
   val jsonGenericProvider = new JsonGenericProvider(Seq(
-    ResolvePattern("post/:postId", __ \ "resolved", Set("postId"), Map("postId" → (__ \ "postId"))),
-    ResolvePattern("images/:imageId", __ \ "image", Set("imageId"), Map("imageId" → (__ \ "imageId"))),
-    ResolvePattern("users/:userId", __ \ "user", Set("userId"), Map("userId" → (__ \ "userId")))
+    ExpandPattern("post/:postId", __ \ "resolved", Set("postId"), Map("postId" → (__ \ "postId"))),
+    ExpandPattern("images/:imageId", __ \ "image", Set("imageId"), Map("imageId" → (__ \ "imageId"))),
+    ExpandPattern("users/:userId", __ \ "user", Set("userId"), Map("userId" → (__ \ "userId")))
   ))
 
-  val expandCtxProvider: collection.immutable.Seq[HttpHeader] ⇒ (Materializer, ExecutionContext) ⇒ ExpandContext[JsValue] = hrs ⇒ (_, _) ⇒ ExpandContext[JsValue] {
+  val expandCtxProvider: collection.immutable.Seq[HttpHeader] ⇒ (ExecutionContext) ⇒ ExpandContext[JsValue] = hrs ⇒ (_) ⇒ ExpandContext[JsValue] {
     root ⇒
       jsonGenericProvider.apply(root).mapValues { url ⇒
         ResourceContext[JsValue]{ params ⇒
@@ -35,7 +35,7 @@ class ExpanderFilterSpec extends WordSpec with Matchers with BeforeAndAfterAll w
       }
   }
 
-  val route = ExpanderFilter(ExpanderFilterConfig(expandCtxProvider, Set("accept-language"), conditionalEnabled = false)){
+  val route = ExpanderFilter(ExpanderFilterConfig(expandCtxProvider, Set("accept-language"), conditionalEnabled = false)).apply{
     path("post") {
       complete(StatusCodes.OK → HttpEntity.Strict(ContentTypes.`application/json`, ByteString(Json.stringify(Json.obj("postId" → 1)))))
     } ~ path("posts") {

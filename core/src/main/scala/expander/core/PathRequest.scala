@@ -143,7 +143,7 @@ object PathRequest {
   def parse(line: String): Seq[PathRequest] = Parse.innersSeq.parse(line) match {
     case Parsed.Success(inners, _) ⇒
       fold(flatten(inners))
-    case _: Parsed.Failure ⇒
+    case Parsed.Failure(_, _, _) ⇒
       Seq.empty
   }
 }

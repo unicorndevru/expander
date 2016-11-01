@@ -14,20 +14,30 @@ class ExpanderFilterConfigSpec extends WordSpec with Matchers with BeforeAndAfte
       ExpanderFilterConfig.readPatterns(ConfigFactory.parseString(
         """
           |expander {
-          |  base-url: "http://api:80/api/"
           |  patterns: [
           |     {
           |        url: "users/:userId"
           |        path: user
           |     }
+          |     {
+          |       url: "nodes/:nodeId"
+          |       path: node
+          |     }
           |  ]
           |}
         """.stripMargin
-      )) shouldBe Seq(ResolvePattern(
-        url = "http://api:80/api/users/:userId",
+      )) shouldBe Seq(ExpandPattern(
+        url = "users/:userId",
         path = __ \ "user",
         urlKeys = Set("userId"),
         required = Map("userId" → (__ \ "userId")),
+        optional = Map.empty,
+        applied = Map.empty
+      ), ExpandPattern(
+        url = "nodes/:nodeId",
+        path = __ \ "node",
+        urlKeys = Set("nodeId"),
+        required = Map("nodeId" → (__ \ "nodeId")),
         optional = Map.empty,
         applied = Map.empty
       ))
@@ -49,7 +59,7 @@ class ExpanderFilterConfigSpec extends WordSpec with Matchers with BeforeAndAfte
           |  ]
           |}
         """.stripMargin
-      )) shouldBe Seq(ResolvePattern(
+      )) shouldBe Seq(ExpandPattern(
         url = "http://api:80/api/users/:id/res/:resId",
         path = __ \ "res",
         urlKeys = Set("id", "resId"),
@@ -78,7 +88,7 @@ class ExpanderFilterConfigSpec extends WordSpec with Matchers with BeforeAndAfte
           |  ]
           |}
         """.stripMargin
-      ), system)
+      ))
 
       efc.forwardHeaders shouldBe Set("authorization", "accept-language")
       efc.conditionalEnabled shouldBe true

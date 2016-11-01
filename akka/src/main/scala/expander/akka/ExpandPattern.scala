@@ -2,7 +2,7 @@ package expander.akka
 
 import play.api.libs.json.JsPath
 
-case class ResolvePattern(
+case class ExpandPattern(
   url:      String,
   path:     JsPath,
   urlKeys:  Set[String],
