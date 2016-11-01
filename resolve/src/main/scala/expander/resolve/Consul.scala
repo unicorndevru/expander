@@ -78,7 +78,7 @@ class Consul(
           .runFold(ByteString(""))(_ ++ _).fast
           .map(bs ⇒ Json.parse(bs.utf8String).as[Node]))
 
-  def createSession(flags: Int, name: String, checks: Set[String] = Set.empty)(implicit ctx: ExecutionContext): Future[String] =
+  def createSession(flags: Int, name: String, ttl: Int = 20, checks: Set[String] = Set.empty)(implicit ctx: ExecutionContext): Future[String] =
     http.singleRequest(HttpRequest(
       method = HttpMethods.PUT,
       uri = baseAddr + "/v1/session/create",
@@ -86,13 +86,20 @@ class Consul(
         "Name" → name,
         "Checks" → (checks + "serfHealth"),
         "Flags" → flags,
-        "Behavior" → "delete"
+        "Behavior" → "delete",
+        "TTL" -> s"${ttl}s"
       )))
     )).flatMap(resp ⇒
       resp.entity.dataBytes
         .runFold(ByteString(""))(_ ++ _)).fast.map { r ⇒
       (Json.parse(r.utf8String) \ "ID").as[String]
     }
+
+  def renewSession(id: String)(implicit ctx: ExecutionContext): Future[AnyRef] =
+    http.singleRequest(HttpRequest(
+      method = HttpMethods.PUT,
+      uri = baseAddr + "/v1/session/renew/" + id
+    ))
 
   def acquire(key: String, sesId: String)(implicit ctx: ExecutionContext): Future[Boolean] = {
     http.singleRequest(HttpRequest(

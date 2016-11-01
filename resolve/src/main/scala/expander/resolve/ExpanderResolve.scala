@@ -3,6 +3,7 @@ package expander.resolve
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.`User-Agent`
 import akka.stream.Materializer
 import com.typesafe.config.{ Config, ConfigFactory }
 
@@ -18,7 +19,7 @@ class ExpanderResolve(
   val http = Http(system)
 
   def resolver(implicit ctx: ExecutionContext): HttpRequest ⇒ Future[HttpResponse] =
-    req ⇒ process(req).flatMap(r ⇒ http.singleRequest(r))
+    req ⇒ process(req).map{ r ⇒ println(Console.BLUE + r + Console.RESET); r }.flatMap(r ⇒ http.singleRequest(r))
 
   def extractKey(uri: Uri): Option[String] = {
     val path = uri.path.toString()
@@ -39,10 +40,14 @@ class ExpanderResolve(
         // Pattern is found
         // Make matcher. It's used for path-modify substitutions as well as for consul key computation
         val r = p.path.pattern.matcher(path)
-
+        println(p)
         // Substitute what we can
         val uriRes = uri.copy(
-          authority = uri.authority.copy(host = p.host.map(Uri.Host(_)).getOrElse(uri.authority.host)),
+          scheme = "http",
+          authority = uri.authority.copy(
+            host = p.host.map(Uri.Host(_)).getOrElse(uri.authority.host),
+            port = if (p.port > 0) p.port else uri.authority.port
+          ),
           path = p.modify.map(r.replaceAll).map(Uri.Path(_)).getOrElse(uri.path)
         )
 
@@ -73,7 +78,12 @@ class ExpanderResolve(
   }
 
   def process(req: HttpRequest)(implicit ctx: ExecutionContext): Future[HttpRequest] = {
-    substituteUri(req.uri).map(uri ⇒ req.copy(uri = uri))
+    substituteUri(req.uri).map(uri ⇒ req.copy(
+      uri = uri,
+      headers = req.headers
+      .filter(_.renderInRequests()).filterNot(h ⇒ h.is("host") || h.is("user-agent"))
+      :+ `User-Agent`("expander-resolve")
+    ))
   }
 
 }
@@ -83,7 +93,8 @@ object ExpanderResolve {
     path:      Regex,
     consulKey: Option[String],
     modify:    Option[String],
-    host:      Option[String]
+    host:      Option[String],
+    port:      Int
   )
 
   def forConfig(config: Config)(implicit system: ActorSystem, mat: Materializer) = {
@@ -107,7 +118,8 @@ object ExpanderResolve {
             path = cfg.getString("path").r,
             consulKey = Try(cfg.getString("consul-key")).toOption,
             modify = Try(cfg.getString("modify-path")).toOption,
-            host = Try(cfg.getString("host")).toOption
+            host = Try(cfg.getString("host")).toOption,
+            port = Try(cfg.getInt("port")).getOrElse(0)
           ))
     )
   }

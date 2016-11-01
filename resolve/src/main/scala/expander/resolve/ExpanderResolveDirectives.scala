@@ -2,10 +2,12 @@ package expander.resolve
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
+import akka.stream.scaladsl.Source
 
 import scala.collection.concurrent.TrieMap
+import scala.concurrent.duration._
 
-class ExpanderResolveDirectives(er: ExpanderResolve) {
+class ExpanderResolveDirectives(er: ExpanderResolve, sessionsTtl: Int = 20) {
 
   private val sessionIds = TrieMap.empty[String, String]
 
@@ -25,9 +27,17 @@ class ExpanderResolveDirectives(er: ExpanderResolve) {
       case Some(s) ⇒ provide(s)
       case None ⇒
         extractExecutionContext.flatMap { implicit ctx ⇒
-          onSuccess(er.consul.createSession(flags, name, checks)).flatMap { s ⇒
-            sessionIds(name) = s
-            provide(s)
+          onSuccess(er.consul.createSession(flags, name, sessionsTtl, checks)).flatMap { s ⇒
+            extractLog.flatMap { log =>
+
+              Source
+                .empty[Unit]
+                .keepAlive((sessionsTtl - 3).seconds, () => ())
+                .runForeach(_ => er.consul.renewSession(s).foreach(_ => log.debug("Pinged: "+name+ " id="+s)))
+
+              sessionIds(name) = s
+              provide(s)
+            }
           }
         }
     }

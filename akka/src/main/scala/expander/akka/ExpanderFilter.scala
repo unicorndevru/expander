@@ -4,9 +4,10 @@ import java.net.InetAddress
 import java.security.MessageDigest
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.coding.Gzip
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.CacheDirectives.{ `max-age`, `must-revalidate` }
-import akka.http.scaladsl.model.headers.{ CustomHeader, EntityTag, `Cache-Control`, `X-Forwarded-For` }
+import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{ Route, RouteResult }
 import akka.stream.Materializer
@@ -14,6 +15,7 @@ import akka.util.ByteString
 import com.typesafe.config.Config
 import expander.core.{ Expander, PathRequest }
 import play.api.libs.json._
+import akka.http.scaladsl.util.FastFuture.EnhancedFuture
 
 import scala.concurrent.Future
 
@@ -56,27 +58,39 @@ class ExpanderFilter(conf: ExpanderFilterConfig)(implicit system: ActorSystem, m
                       val headers = reqCtx.request.headers.filter(h ⇒ passHeadersLowerCase(h.lowercaseName()))
                       implicit lazy val expandContext = expandContextProvider(headers ++ expandingHeaders)(ectx)
 
-                      resp.entity.dataBytes.runFold(ByteString(""))(_ ++ _).map(bs ⇒ Json.parse(bs.decodeString("UTF-8"))).flatMap(Expander(_, reqs: _*)).flatMap { json ⇒
-                        val jsonString = Json.stringify(json)
+                      resp.entity.dataBytes.runFold(ByteString(""))(_ ++ _).fast
+                        .flatMap {
+                          case bs if resp.header[`Content-Encoding`].exists(_.encodings.contains(HttpEncodings.gzip)) ⇒
+                            Gzip.decode(bs)
+                          case bs ⇒
+                            Future.successful(bs)
+                        }
+                        .map(_.utf8String).map{ s ⇒
+                          Json.parse(s)
+                        }.flatMap(Expander(_, reqs: _*)).flatMap { json ⇒
+                          val jsonString = Json.stringify(json)
 
-                        val completeJson = complete(
-                          resp.copy(
-                            headers = resp.headers.filterNot(h ⇒ h.lowercaseName() == "etag" || h.lowercaseName() == "last-modified"),
-                            entity = HttpEntity.Strict(ContentTypes.`application/json`, ByteString(jsonString))
+                          val completeJson = complete(
+                            resp.copy(
+                              headers = resp.headers.filterNot(h ⇒
+                                h.lowercaseName() == "etag" ||
+                                  h.lowercaseName() == "last-modified" ||
+                                  h.lowercaseName() == "content-encoding"),
+                              entity = HttpEntity.Strict(ContentTypes.`application/json`, ByteString(jsonString))
+                            )
                           )
-                        )
 
-                        if (conditionalEnabled) {
-                          (get {
-                            conditional(EntityTag(hash(jsonString))) {
-                              mapResponseHeaders(_ :+ `Cache-Control`(`max-age`(0), `must-revalidate`)) {
-                                completeJson
+                          if (conditionalEnabled) {
+                            (get {
+                              conditional(EntityTag(hash(jsonString))) {
+                                mapResponseHeaders(_ :+ `Cache-Control`(`max-age`(0), `must-revalidate`)) {
+                                  completeJson
+                                }
                               }
-                            }
-                          } ~ completeJson) (reqCtx)
-                        } else completeJson(reqCtx)
+                            } ~ completeJson) (reqCtx)
+                          } else completeJson(reqCtx)
 
-                      }
+                        }
 
                     case f ⇒
                       Future.successful(f)
