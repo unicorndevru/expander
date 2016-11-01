@@ -2,7 +2,7 @@ package expander.resolve
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{ Sink, Source }
 
 import scala.collection.concurrent.TrieMap
 import scala.concurrent.duration._
@@ -33,8 +33,17 @@ class ExpanderResolveDirectives(er: ExpanderResolve, sessionsTtl: Int = 20) {
 
                 Source
                   .empty[Unit]
-                  .keepAlive((sessionsTtl - 3).seconds, () ⇒ ())
-                  .runForeach(_ ⇒ er.consul.renewSession(s).foreach(_ ⇒ log.debug("Pinged: " + name + " id=" + s)))
+                  .keepAlive((sessionsTtl / 2).seconds, () ⇒ ())
+                  .mapAsync(1){ _ ⇒
+                    println(Console.BLUE + "Trying to renew " + name + " : " + s + Console.RESET)
+                    er.consul.renewSession(s)
+                  }
+                  .runWith(Sink.last)
+                  .onComplete{
+                    r ⇒
+                      println(Console.RED + r + Console.RESET)
+                      sessionIds.remove(name)
+                  }
 
                 sessionIds(name) = s
                 provide(s)
