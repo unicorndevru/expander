@@ -8,7 +8,9 @@ import akka.stream.Materializer
 import akka.util.ByteString
 import play.api.libs.json.Json
 
+import scala.collection.concurrent.TrieMap
 import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.duration._
 
 class Consul(
     val baseAddr:   String,
@@ -51,6 +53,8 @@ class Consul(
   implicit val valueFmt = Json.format[Value]
   implicit val nodeFmt = Json.format[Node]
 
+  private val namedSessions = TrieMap.empty[String, String]
+
   def getSessionInfo(id: String)(implicit ctx: ExecutionContext): Future[Seq[Session]] =
     http.singleRequest(HttpRequest(uri = baseAddr + "/v1/session/info/" + id))
       .flatMap(resp ⇒
@@ -78,36 +82,69 @@ class Consul(
           .runFold(ByteString(""))(_ ++ _).fast
           .map(bs ⇒ Json.parse(bs.utf8String).as[Node]))
 
-  def createSession(flags: Int, name: String, ttl: Int = 20, checks: Set[String] = Set.empty)(implicit ctx: ExecutionContext): Future[String] =
-    http.singleRequest(HttpRequest(
-      method = HttpMethods.PUT,
-      uri = baseAddr + "/v1/session/create",
-      entity = HttpEntity.apply(ContentTypes.`application/json`, Json.stringify(Json.obj(
-        "Name" → name,
-        "Checks" → (checks + "serfHealth"),
-        "Flags" → flags,
-        "Behavior" → "delete",
-        "TTL" → s"${ttl}s"
-      )))
-    )).flatMap(resp ⇒
-      resp.entity.dataBytes
-        .runFold(ByteString(""))(_ ++ _)).fast.map { r ⇒
-      (Json.parse(r.utf8String) \ "ID").as[String]
+  def createSession(flags: Int, name: String, ttl: Int = 20, checks: Set[String] = Set.empty, autoRenew: Boolean = true)(implicit ctx: ExecutionContext): Future[String] =
+    namedSessions.get(name) match {
+      case Some(id) ⇒
+        Future.successful(id)
+
+      case None ⇒
+        http.singleRequest(HttpRequest(
+          method = HttpMethods.PUT,
+          uri = baseAddr + "/v1/session/create",
+          entity = HttpEntity.apply(ContentTypes.`application/json`, Json.stringify(Json.obj(
+            "Name" → name,
+            "Checks" → (checks + "serfHealth"),
+            "Flags" → flags,
+            "Behavior" → "delete",
+            "TTL" → s"${ttl}s"
+          )))
+        )).flatMap(resp ⇒
+          resp.entity.dataBytes
+            .runFold(ByteString(""))(_ ++ _)).fast.map { r ⇒
+          val id = (Json.parse(r.utf8String) \ "ID").as[String]
+          namedSessions(name) = id
+
+          if (autoRenew) {
+            val period = (ttl / 2).seconds
+
+            def renew(): Unit = renewSession(id)
+              .foreach {
+                r ⇒
+                  if (r && namedSessions.get(name).contains(id)) {
+                    system.scheduler.scheduleOnce(period)(renew())
+                  } else {
+                    namedSessions.remove(name, id)
+                  }
+              }
+
+            system
+              .scheduler
+              .scheduleOnce(period)(renew())
+          }
+          id
+        }
     }
 
-  def renewSession(id: String)(implicit ctx: ExecutionContext): Future[AnyRef] =
+  def renewSession(id: String)(implicit ctx: ExecutionContext): Future[Boolean] =
     http.singleRequest(HttpRequest(
       method = HttpMethods.PUT,
       uri = baseAddr + "/v1/session/renew/" + id
-    ))
+    )).map(_.status.isSuccess())
 
-  def acquire(key: String, sesId: String)(implicit ctx: ExecutionContext): Future[Boolean] = {
+  def acquire(key: String, sesId: String)(implicit ctx: ExecutionContext): Future[Boolean] =
     http.singleRequest(HttpRequest(
       method = HttpMethods.PUT,
       uri = s"$baseAddr/v1/kv/$key?acquire=$sesId"
     )).flatMap(resp ⇒
       resp.entity.dataBytes
         .runFold(ByteString(""))(_ ++ _)).fast.map(_.utf8String == "true")
-  }
+
+  def release(key: String, sesId: String)(implicit ctx: ExecutionContext): Future[Boolean] =
+    http.singleRequest(HttpRequest(
+      method = HttpMethods.PUT,
+      uri = s"$baseAddr/v1/kv/$key?release=$sesId"
+    )).flatMap(resp ⇒
+      resp.entity.dataBytes
+        .runFold(ByteString(""))(_ ++ _)).fast.map(_.utf8String == "true")
 
 }

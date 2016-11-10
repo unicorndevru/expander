@@ -23,7 +23,8 @@ class ExpanderResolve(
 
   def extractKey(uri: Uri): Option[String] = {
     val path = uri.path.toString()
-    patterns.find(_.path.pattern.matcher(path).matches()).flatMap(p ⇒ p.consulKey.map(p.path.pattern.matcher(path).replaceAll))
+    patterns.find(_.path.pattern.matcher(path).matches())
+      .flatMap(p ⇒ p.consulKey.map(p.path.pattern.matcher(path).replaceAll))
   }
 
   // aim is to build mapper uri -> uri, and then req -> req, so req -> f[resp]

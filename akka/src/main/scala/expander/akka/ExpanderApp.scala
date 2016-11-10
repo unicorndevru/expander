@@ -15,36 +15,10 @@ object ExpanderApp extends App {
   val config = ConfigFactory.load()
 
   implicit val system = ActorSystem("expander")
-  implicit val executor = system.dispatcher
   implicit val mat = ActorMaterializer()
 
-  private val port = config.getInt("expander.http.port")
+  val api = new ExpanderApi(config)
 
-  val logger = Logging(system, getClass)
-
-  logger.info("starting expander http server on port: {}", port)
-
-  val prefix = Try(config.getString("expander.proxy.prefix")).getOrElse("api")
-  val filter = ExpanderFilter.forConfig(config)
-  val resolve = ExpanderResolve.forConfig(config)
-
-  val routes = Route.seal {
-    encodeResponse {
-      pathPrefix(prefix) {
-        filter {
-          extractExecutionContext { ec ⇒
-            val r = resolve.resolver(ec)
-            extractRequest { req ⇒
-              println(Console.RED + req + Console.RESET)
-              complete(r(req))
-            }
-          }
-        }
-      }
-    }
-    // TODO: health endpoint
-  }
-
-  Http(system).bindAndHandle(routes, config.getString("expander.http.interface"), port)
+  api.run()
 
 }
