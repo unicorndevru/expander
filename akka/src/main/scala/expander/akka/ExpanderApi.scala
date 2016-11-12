@@ -30,7 +30,7 @@ class ExpanderApi(config: Config)(implicit system: ActorSystem, mat: Materialize
           extractExecutionContext { ec ⇒
             val r = resolve.resolver(ec)
             extractRequest { req ⇒
-              println(Console.RED + req + Console.RESET)
+              logger.debug("Expander proxying request: {}", req)
               complete(r(req))
             }
           }
