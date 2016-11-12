@@ -6,13 +6,14 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.`User-Agent`
 import akka.stream.Materializer
 import com.typesafe.config.{ Config, ConfigFactory }
+import expander.resolve.consul.ConsulService
 
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Try
 import scala.util.matching.Regex
 
 class ExpanderResolve(
-    val consul:   Consul,
+    val consul:   ConsulService,
     val patterns: Seq[ExpanderResolve.Pattern]
 )(implicit system: ActorSystem, mat: Materializer) {
 
@@ -102,9 +103,10 @@ object ExpanderResolve {
     import scala.collection.convert.wrapAsScala._
 
     new ExpanderResolve(
-      consul = new Consul(
-      Try(config.getString("expander.resolve.consul-addr")).getOrElse("http://127.0.0.1:8500"),
-      Try(config.getBoolean("expander.resolve.consul-dns-enabled")).getOrElse(false)
+      consul = new ConsulService(
+      Try(config.getBoolean("expander.resolve.consul.enabled")).getOrElse(false),
+      Try(config.getString("expander.resolve.consul.addr")).getOrElse("http://127.0.0.1:8500"),
+      Try(config.getBoolean("expander.resolve.consul.dns-enabled")).getOrElse(false)
     ),
       patterns = Try(
         config.getConfigList("expander.resolve.patterns").toSeq
