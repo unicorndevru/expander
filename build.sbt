@@ -70,13 +70,12 @@ lazy val `expander` = (project in file("."))
   .dependsOn(`expander-akka`, `expander-core`)
   .aggregate(`expander-akka`, `expander-core`)
   .settings(
+    mainClass := Some("expander.akka.ExpanderApp"),
     dockerBaseImage := "isuper/java-oracle",
     version in Docker := expanderV,
     dockerExposedPorts := Seq(9000),
     packageName in Docker := "quay.io/alari/expander"
-  )
-
-mainClass := Some("expander.akka.ExpanderApp")
+  ).enablePlugins(DockerPlugin).enablePlugins(JavaAppPackaging)
 
 offline := true
 
