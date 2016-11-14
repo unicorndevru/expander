@@ -32,7 +32,7 @@ class ExpanderApi(config: Config)(implicit system: ActorSystem, mat: Materialize
     encodeResponse {
       pathPrefix(prefix) {
         filter {
-          extractExecutionContext { ec ⇒
+          extractExecutionContext { implicit ec ⇒
             filter.extractExpandingHeaders { hrs ⇒
               extractRequest { req ⇒
 
@@ -43,7 +43,12 @@ class ExpanderApi(config: Config)(implicit system: ActorSystem, mat: Materialize
                   uri = req.uri.copy(rawQueryString = req.uri.rawQueryString.map(rqs ⇒
                     req.uri.query().filterNot(_._1 equalsIgnoreCase Expander.Key).toString())),
                   headers = req.headers.filter(filter.isPassHeader) ++ hrs
-                )))
+                )).recover {
+                  case e: Throwable ⇒
+                    print(e)
+                    e.printStackTrace()
+                    throw e
+                })
               }
             }
           }
