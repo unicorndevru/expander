@@ -50,8 +50,19 @@ class ConsulService(
     TaggedAddresses: Map[String, String]
   )
 
+  case class ServiceNode(
+    Node:           String,
+    Address:        String,
+    ServiceID:      String,
+    ServiceName:    String,
+    ServiceTags:    JsValue,
+    ServiceAddress: String,
+    ServicePort:    Int
+  )
+
   implicit val nodeNodeFmt = Json.format[NodeInfo]
   implicit val nodeFmt = Json.format[Node]
+  implicit val serviceNodeFmt = Json.format[ServiceNode]
 
   system.registerOnTermination(new Runnable {
     override def run(): Unit =
@@ -65,4 +76,6 @@ class ConsulService(
   def getNode(node: String): Future[Node] =
     getJson("/v1/catalog/node/" + node).map(_.as[Node])
 
+  def getService(service: String): Future[Seq[ServiceNode]] =
+    getJson("/v1/catalog/service/" + service).map(_.as[Seq[ServiceNode]])
 }

@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.{ ExceptionHandler, Route }
 import akka.stream.Materializer
 import com.typesafe.config.Config
 import expander.core.Expander
@@ -21,6 +21,12 @@ class ExpanderApi(config: Config)(implicit system: ActorSystem, mat: Materialize
   val prefix = config.getString("expander.proxy.prefix")
   val filter = ExpanderFilter.forConfig(config)
   val resolve = ExpanderResolve.forConfig(config)
+
+  implicit val exceptionHandler = ExceptionHandler{
+    case e: Throwable ⇒
+      logger.error(e, "Exception in expander filter app")
+      throw e
+  }
 
   val routes = Route.seal {
     encodeResponse {

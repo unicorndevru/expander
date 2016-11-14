@@ -2,6 +2,7 @@ package expander.resolve
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.Uri.Authority
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{ CustomHeader, `User-Agent` }
 import akka.stream.Materializer
@@ -19,6 +20,8 @@ class ExpanderResolve(
 )(implicit system: ActorSystem, mat: Materializer) {
 
   val http = Http(system)
+
+  private val serviceR = "([^.]+)\\.service\\.consul".r
 
   def resolver(implicit ctx: ExecutionContext): HttpRequest ⇒ Future[HttpResponse] =
     req ⇒ process(req).flatMap(r ⇒ http.singleRequest(r))
@@ -55,14 +58,33 @@ class ExpanderResolve(
         )
 
         // Prepare fallback result
-        val result = Future.successful(uriRes)
+        val result = if (consul.dnsEnabled) {
+          Future.successful(uriRes)
+        } else {
+          uriRes.authority.host.address() match {
+            case serviceR(srv) ⇒
+              consul.getService(srv).map {
+                srvs ⇒
+                  srvs.headOption match {
+                    case Some(s) ⇒
+                      uriRes.copy(
+                        authority = Uri.Authority(host = Uri.Host(s.Address), port = s.ServicePort)
+                      )
+                    case _ ⇒
+                      uriRes
+
+                  }
+              }
+            case _ ⇒ Future.successful(uriRes)
+          }
+        }
 
         p.consulKey.map(r.replaceAll).fold(result) { key ⇒
-          consul.getValue(key).flatMap(_.headOption.fold(result) { v ⇒
+          consul.getValue(key).flatMap(_.fold(result) { v ⇒
             // Is lock acquired and session provided?
             v.Session.fold(result) { ses ⇒
               // Get session
-              consul.getSessionInfo(ses).flatMap(_.headOption.fold(result) { s ⇒
+              consul.getSessionInfo(ses).flatMap(_.fold(result) { s ⇒
                 (if (consul.dnsEnabled) {
                   // If DNS enabled, we provide node dns address to be resolved via lookup
                   Future.successful(s.Node + ".node.consul")
@@ -84,8 +106,7 @@ class ExpanderResolve(
     substituteUri(req.uri).map(uri ⇒ req.copy(
       uri = uri,
       headers = req.headers
-      .filter(_.renderInRequests()).filterNot(h ⇒ h.is("host"))
-      :+ `User-Agent`("expander-resolve")
+        .filter(_.renderInRequests()).filterNot(h ⇒ h.is("host"))
     ))
   }
 

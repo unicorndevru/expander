@@ -5,7 +5,7 @@ import scalariform.formatter.preferences._
 
 name := "expander"
 
-val expanderV = "0.6-beta5"
+val expanderV = "0.6-beta6"
 
 val akkaV = "2.4.12"
 
@@ -72,6 +72,8 @@ lazy val `resolve` = (project in file("resolve")).settings(commons: _*).settings
 lazy val `expander` = (project in file("."))
   .dependsOn(`expander-akka`, `expander-core`)
   .aggregate(`expander-akka`, `expander-core`)
+
+mainClass := Some("expander.akka.ExpanderApp")
 
 offline := true
 
