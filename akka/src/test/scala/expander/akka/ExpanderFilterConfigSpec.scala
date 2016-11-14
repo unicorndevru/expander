@@ -2,6 +2,8 @@ package expander.akka
 
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import com.typesafe.config.ConfigFactory
+import expander.resolve.ExpanderResolve
+import expander.resolve.consul.ConsulService
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 import play.api.libs.json._
@@ -71,7 +73,7 @@ class ExpanderFilterConfigSpec extends WordSpec with Matchers with BeforeAndAfte
     }
 
     "read config" in {
-      val efc = ExpanderFilterConfig.build(ConfigFactory.parseString(
+      val c = ConfigFactory.parseString(
         """
           |expander {
           |  set-headers {
@@ -88,7 +90,9 @@ class ExpanderFilterConfigSpec extends WordSpec with Matchers with BeforeAndAfte
           |  ]
           |}
         """.stripMargin
-      ).withFallback(ConfigFactory.load()))
+      ).withFallback(ConfigFactory.load())
+
+      val efc = ExpanderFilterConfig.build(c, ExpanderResolve.build(c, ConsulService.build(c)))
 
       efc.forwardHeaders shouldBe Set("authorization", "accept-language")
       efc.conditionalEnabled shouldBe true
