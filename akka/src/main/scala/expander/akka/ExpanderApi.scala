@@ -7,6 +7,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.stream.Materializer
 import com.typesafe.config.Config
+import expander.core.Expander
 import expander.resolve.ExpanderResolve
 
 class ExpanderApi(config: Config)(implicit system: ActorSystem, mat: Materializer) {
@@ -26,16 +27,26 @@ class ExpanderApi(config: Config)(implicit system: ActorSystem, mat: Materialize
       pathPrefix(prefix) {
         filter {
           extractExecutionContext { ec ⇒
-            val r = resolve.resolver(ec)
-            extractRequest { req ⇒
-              logger.debug("Expander proxying request: {}", req)
-              complete(r(req))
+            filter.extractExpandingHeaders { hrs ⇒
+              extractRequest { req ⇒
+
+                val r = resolve.resolver(ec)
+                logger.debug("Expander proxying request: {}", req)
+
+                complete(r(req.copy(
+                  uri = req.uri.copy(rawQueryString = req.uri.rawQueryString.map(rqs ⇒
+                    req.uri.query().filterNot(_._1 equalsIgnoreCase Expander.Key).toString())),
+                  headers = req.headers.filter(filter.isPassHeader) ++ hrs
+                )))
+              }
             }
           }
         }
       }
+    } ~ path("health") {
+      // TODO: health endpoint
+      complete("Operating")
     }
-    // TODO: health endpoint
   }
 
   def run() = {

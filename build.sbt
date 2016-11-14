@@ -5,7 +5,7 @@ import scalariform.formatter.preferences._
 
 name := "expander"
 
-val expanderV = "0.6-beta4"
+val expanderV = "0.6-beta5"
 
 val akkaV = "2.4.12"
 

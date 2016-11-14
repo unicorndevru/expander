@@ -3,7 +3,7 @@ package expander.resolve
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.`User-Agent`
+import akka.http.scaladsl.model.headers.{ CustomHeader, `User-Agent` }
 import akka.stream.Materializer
 import com.typesafe.config.Config
 import expander.resolve.consul.ConsulService
@@ -13,8 +13,9 @@ import scala.util.Try
 import scala.util.matching.Regex
 
 class ExpanderResolve(
-    val consul:   ConsulService,
-    val patterns: Seq[ExpanderResolve.Pattern]
+    val consul:     ConsulService,
+    val patterns:   Seq[ExpanderResolve.Pattern],
+    val setHeaders: Seq[HttpHeader]
 )(implicit system: ActorSystem, mat: Materializer) {
 
   val http = Http(system)
@@ -83,7 +84,7 @@ class ExpanderResolve(
     substituteUri(req.uri).map(uri ⇒ req.copy(
       uri = uri,
       headers = req.headers
-      .filter(_.renderInRequests()).filterNot(h ⇒ h.is("host") || h.is("user-agent"))
+      .filter(_.renderInRequests()).filterNot(h ⇒ h.is("host"))
       :+ `User-Agent`("expander-resolve")
     ))
   }
@@ -118,7 +119,22 @@ object ExpanderResolve {
               modify = Try(cfg.getString("modify-path")).toOption,
               host = Try(cfg.getString("host")).toOption,
               port = Try(cfg.getInt("port")).getOrElse(0)
-            ))
+            )),
+      setHeaders = {
+        Try(config.getObject("expander.resolve.set-headers")).toOption.fold(Seq.empty[HttpHeader]){ setHeadersConf ⇒
+          setHeadersConf.keySet().map { k ⇒ k → Try(config.getString("expander.resolve.set-headers." + k)).toOption }.collect {
+            case (k, Some(v)) ⇒ new CustomHeader {
+              override def name() = k
+
+              override def value() = v
+
+              override def renderInResponses() = false
+
+              override def renderInRequests() = true
+            }
+          }.toSeq
+        }
+      }
     )
   }
 }

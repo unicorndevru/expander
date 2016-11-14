@@ -25,27 +25,13 @@ object ExpanderFilterConfig {
     val httpResolve = ExpanderResolve.forConfig(config)
 
     val forwardHeaders = config.getStringList("expander.forward-headers").toSet
-    val setHeadersConfOpt = Try(config.getObject("expander.set-headers")).toOption
 
     val conditionalEnabled = config.getBoolean("expander.enable-conditional")
 
-    val setHeaders: Seq[HttpHeader] = setHeadersConfOpt.fold(Seq.empty[HttpHeader]) { setHeadersConf ⇒
-      setHeadersConf.keySet().map { k ⇒ k → Try(config.getString("expander.set-headers." + k)).toOption }.collect {
-        case (k, Some(v)) ⇒ new CustomHeader {
-          override def name() = k
-
-          override def value() = v
-
-          override def renderInResponses() = false
-
-          override def renderInRequests() = true
-        }
-      }.toSeq
-    }
     val patterns: Seq[ExpandPattern] = readPatterns(config)
 
     ExpanderFilterConfig(
-      hrs ⇒ ec ⇒ new JsonExpandResolveContext(hrs ++ setHeaders, new JsonGenericProvider(patterns), httpResolve.resolver(ec))(mat, ec),
+      hrs ⇒ ec ⇒ new JsonExpandResolveContext(hrs, new JsonGenericProvider(patterns), httpResolve.resolver(ec))(mat, ec),
       forwardHeaders,
       conditionalEnabled = conditionalEnabled
     )

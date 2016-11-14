@@ -9,7 +9,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.CacheDirectives.{ `max-age`, `must-revalidate` }
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.{ Route, RouteResult }
+import akka.http.scaladsl.server.{ Directive1, Route, RouteResult }
 import akka.stream.Materializer
 import akka.util.ByteString
 import com.typesafe.config.Config
@@ -32,9 +32,21 @@ class ExpanderFilter(conf: ExpanderFilterConfig)(implicit system: ActorSystem, m
     override def renderInRequests() = true
   }
 
+  val isPassHeader: HttpHeader ⇒ Boolean = h ⇒ conf.forwardHeaders.exists(h.is)
+
+  val extractExpandingHeaders: Directive1[Seq[HttpHeader]] =
+    (extractClientIP.map(_.toOption) | provide(Option.empty[InetAddress])).flatMap { clientIp ⇒
+      extractUri.flatMap { uri ⇒
+        val expandingHeaders: Seq[HttpHeader] =
+          clientIp.map(ip ⇒ `X-Forwarded-For`(RemoteAddress(ip))).toSeq :+
+            header("X-Expanding-Uri", uri.toString)
+
+        provide(expandingHeaders)
+      }
+    }
+
   def apply(route: Route): Route = {
     import conf._
-    val passHeadersLowerCase = forwardHeaders.map(_.toLowerCase)
 
     parameter(Expander.Key.?) {
       case None ⇒
@@ -47,15 +59,13 @@ class ExpanderFilter(conf: ExpanderFilterConfig)(implicit system: ActorSystem, m
         } else {
           extractRequestContext { reqCtx ⇒
             extractExecutionContext { implicit ectx ⇒
-              (extractClientIP.map(_.toOption) | provide(Option.empty[InetAddress])) { clientIp ⇒
-
-                val expandingHeaders: Seq[HttpHeader] = clientIp.map(ip ⇒ `X-Forwarded-For`(RemoteAddress(ip))).toSeq :+ header("X-Expanding-Uri", reqCtx.request.uri.toString)
+              extractExpandingHeaders { expandingHeaders ⇒
 
                 mapRouteResultFuture {
                   _.flatMap {
                     case RouteResult.Complete(resp) if resp.entity.contentType == ContentTypes.`application/json` ⇒
 
-                      val headers = reqCtx.request.headers.filter(h ⇒ passHeadersLowerCase(h.lowercaseName()))
+                      val headers = reqCtx.request.headers.filter(isPassHeader)
                       implicit lazy val expandContext = expandContextProvider(headers ++ expandingHeaders)(ectx)
 
                       resp.entity.dataBytes.runFold(ByteString(""))(_ ++ _).fast
