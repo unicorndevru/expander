@@ -72,8 +72,7 @@ lazy val `resolve` = (project in file("resolve")).settings(commons: _*).settings
 lazy val `expander` = (project in file("."))
   .dependsOn(`expander-akka`, `expander-core`)
   .aggregate(`expander-akka`, `expander-core`)
-
-mainClass := Some("expander.akka.ExpanderApp")
+  .settings(mainClass := Some("expander.akka.ExpanderApp"))
 
 offline := true
 

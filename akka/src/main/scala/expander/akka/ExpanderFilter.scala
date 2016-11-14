@@ -16,6 +16,7 @@ import com.typesafe.config.Config
 import expander.core.{ Expander, PathRequest }
 import play.api.libs.json._
 import akka.http.scaladsl.util.FastFuture.EnhancedFuture
+import expander.resolve.ExpanderResolve
 
 import scala.concurrent.Future
 
@@ -120,8 +121,8 @@ class ExpanderFilter(conf: ExpanderFilterConfig)(implicit system: ActorSystem, m
 
 object ExpanderFilter {
 
-  def forConfig(config: Config)(implicit system: ActorSystem, mat: Materializer): ExpanderFilter =
-    apply(ExpanderFilterConfig.build(config))
+  def build(config: Config, httpResolve: ExpanderResolve)(implicit system: ActorSystem, mat: Materializer): ExpanderFilter =
+    apply(ExpanderFilterConfig.build(config, httpResolve))
 
   def apply(conf: ExpanderFilterConfig)(implicit system: ActorSystem, mat: Materializer) =
     new ExpanderFilter(conf)

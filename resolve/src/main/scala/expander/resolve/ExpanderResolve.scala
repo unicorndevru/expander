@@ -2,9 +2,8 @@ package expander.resolve
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.Uri.Authority
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{ CustomHeader, `User-Agent` }
+import akka.http.scaladsl.model.headers.CustomHeader
 import akka.stream.Materializer
 import com.typesafe.config.Config
 import expander.resolve.consul.ConsulService
@@ -122,15 +121,11 @@ object ExpanderResolve {
     port:      Int
   )
 
-  def forConfig(config: Config)(implicit system: ActorSystem, mat: Materializer) = {
+  def build(config: Config, consul: ConsulService)(implicit system: ActorSystem, mat: Materializer) = {
     import scala.collection.convert.wrapAsScala._
 
     new ExpanderResolve(
-      consul = new ConsulService(
-      config.getBoolean("expander.resolve.consul.enabled"),
-      config.getString("expander.resolve.consul.addr"),
-      config.getBoolean("expander.resolve.consul.dns-enabled")
-    ),
+      consul = consul,
       patterns =
         config.getConfigList("expander.resolve.patterns").toSeq
           .map(cfg ⇒
@@ -142,7 +137,7 @@ object ExpanderResolve {
               port = Try(cfg.getInt("port")).getOrElse(0)
             )),
       setHeaders = {
-        Try(config.getObject("expander.resolve.set-headers")).toOption.fold(Seq.empty[HttpHeader]){ setHeadersConf ⇒
+        Try(config.getObject("expander.resolve.set-headers")).toOption.fold(Seq.empty[HttpHeader]) { setHeadersConf ⇒
           setHeadersConf.keySet().map { k ⇒ k → Try(config.getString("expander.resolve.set-headers." + k)).toOption }.collect {
             case (k, Some(v)) ⇒ new CustomHeader {
               override def name() = k

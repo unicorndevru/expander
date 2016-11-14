@@ -20,10 +20,7 @@ case class ExpanderFilterConfig(
 )
 
 object ExpanderFilterConfig {
-  def build(config: Config)(implicit system: ActorSystem, mat: Materializer): ExpanderFilterConfig = {
-
-    val httpResolve = ExpanderResolve.forConfig(config)
-
+  def build(config: Config, httpResolve: ExpanderResolve)(implicit system: ActorSystem, mat: Materializer): ExpanderFilterConfig = {
     val forwardHeaders = config.getStringList("expander.forward-headers").toSet
 
     val conditionalEnabled = config.getBoolean("expander.enable-conditional")

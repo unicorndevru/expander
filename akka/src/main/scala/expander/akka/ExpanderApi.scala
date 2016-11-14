@@ -9,6 +9,10 @@ import akka.stream.Materializer
 import com.typesafe.config.Config
 import expander.core.Expander
 import expander.resolve.ExpanderResolve
+import expander.resolve.consul.ConsulService
+
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 class ExpanderApi(config: Config)(implicit system: ActorSystem, mat: Materializer) {
 
@@ -19,8 +23,9 @@ class ExpanderApi(config: Config)(implicit system: ActorSystem, mat: Materialize
   logger.info("starting expander http server on port: {}", port)
 
   val prefix = config.getString("expander.proxy.prefix")
-  val filter = ExpanderFilter.forConfig(config)
-  val resolve = ExpanderResolve.forConfig(config)
+  val consul = ConsulService.build(config)
+  val resolve = ExpanderResolve.build(config, consul)
+  val filter = ExpanderFilter.build(config, resolve)
 
   implicit val exceptionHandler = ExceptionHandler{
     case e: Throwable ⇒
@@ -61,7 +66,27 @@ class ExpanderApi(config: Config)(implicit system: ActorSystem, mat: Materialize
   }
 
   def run() = {
-    Http(system).bindAndHandle(routes, config.getString("expander.http.interface"), port)
+    import scala.concurrent.ExecutionContext.Implicits.global
+
+    val iface = config.getString("expander.http.interface")
+
+    Http(system)
+      .bindAndHandle(routes, iface, port)
+      .flatMap(_ ⇒
+        consul.registerService(
+          name = "expander",
+          port = port,
+          httpCheck = Some(s"http://${if (iface.contains("0.0.0.0")) "127.0.0.1" else iface}:$port/health")
+        )).map {
+        case true ⇒
+          logger.info("Registering on termination...")
+          system.registerOnTermination(
+            Await.result(consul.deregisterService("expander").map(v ⇒ logger.info("Deregistered? {}", v)), 3.seconds)
+          )
+          true
+        case false ⇒
+          false
+      }
   }
 
 }
