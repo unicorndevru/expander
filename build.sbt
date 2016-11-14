@@ -5,15 +5,13 @@ import scalariform.formatter.preferences._
 
 name := "expander"
 
-val expanderV = "0.6-beta3"
+val expanderV = "0.6-beta4"
 
 val akkaV = "2.4.12"
 
 val akkaHttpV = "2.4.11"
 
 val json = "com.typesafe.play" %% "play-json" % "2.5.9"
-
-val gitHeadCommitSha = settingKey[String]("current git commit SHA")
 
 val commonScalariform = scalariformSettings :+ (ScalariformKeys.preferences := ScalariformKeys.preferences.value
   .setPreference(AlignParameters, true)
@@ -25,19 +23,18 @@ val commonScalariform = scalariformSettings :+ (ScalariformKeys.preferences := S
 val commons = Seq(
   organization := "ru.unicorndev",
   scalaVersion := "2.11.8",
-  version := expanderV + "." +gitHeadCommitSha.value,
+  version := expanderV,
   resolvers ++= Seq(
     "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
     "scalaz-bintray" at "https://dl.bintray.com/scalaz/releases",
     Resolver.bintrayRepo("alari", "generic")
   ),
-  gitHeadCommitSha in ThisBuild := Process("git rev-parse --short HEAD").lines.head,
   licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
 ) ++ commonScalariform
 
 commons
 
-lazy val `expander-core` = (project in file("core")).settings(commons:_*).settings(
+lazy val `expander-core` = (project in file("core")).settings(commons: _*).settings(
   name := "expander-core",
   libraryDependencies ++= Seq(
     json,
@@ -46,17 +43,23 @@ lazy val `expander-core` = (project in file("core")).settings(commons:_*).settin
   )
 )
 
-lazy val `expander-akka` = (project in file("akka")).settings(commons:_*).settings(
+lazy val `expander-akka` = (project in file("akka")).settings(commons: _*).settings(
   name := "expander-akka",
   libraryDependencies ++= Seq(
     "com.typesafe.akka" %% "akka-http-experimental" % akkaHttpV % Provided,
     "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpV % Test,
     "org.scalatest" %% "scalatest" % "3.0.0" % Test
-  )
-) .dependsOn(`expander-core`, `resolve`)
+  ),
+  mainClass := Some("expander.akka.ExpanderApp"),
+  dockerBaseImage := "isuper/java-oracle",
+  version in Docker := expanderV,
+  dockerExposedPorts := Seq(9000),
+  packageName in Docker := "quay.io/alari/expander"
+).dependsOn(`expander-core`, `resolve`)
   .aggregate(`expander-core`, `resolve`)
+  .enablePlugins(DockerPlugin).enablePlugins(JavaAppPackaging)
 
-lazy val `resolve` = (project in file("resolve")).settings(commons:_*).settings(
+lazy val `resolve` = (project in file("resolve")).settings(commons: _*).settings(
   name := "resolve",
   libraryDependencies ++= Seq(
     json,
@@ -69,13 +72,6 @@ lazy val `resolve` = (project in file("resolve")).settings(commons:_*).settings(
 lazy val `expander` = (project in file("."))
   .dependsOn(`expander-akka`, `expander-core`)
   .aggregate(`expander-akka`, `expander-core`)
-  .settings(
-    mainClass := Some("expander.akka.ExpanderApp"),
-    dockerBaseImage := "isuper/java-oracle",
-    version in Docker := expanderV,
-    dockerExposedPorts := Seq(9000),
-    packageName in Docker := "quay.io/alari/expander"
-  ).enablePlugins(DockerPlugin).enablePlugins(JavaAppPackaging)
 
 offline := true
 
