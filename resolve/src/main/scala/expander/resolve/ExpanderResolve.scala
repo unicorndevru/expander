@@ -5,7 +5,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.`User-Agent`
 import akka.stream.Materializer
-import com.typesafe.config.{ Config, ConfigFactory }
+import com.typesafe.config.Config
 import expander.resolve.consul.ConsulService
 
 import scala.concurrent.{ ExecutionContext, Future }
@@ -38,7 +38,7 @@ class ExpanderResolve(
     // Find URI correction pattern
     patterns
       .find(_.path.pattern.matcher(path).matches())
-      .fold(Future.successful(uri)){ p ⇒
+      .fold(Future.successful(uri)) { p ⇒
         // Pattern is found
         // Make matcher. It's used for path-modify substitutions as well as for consul key computation
         val r = p.path.pattern.matcher(path)
@@ -91,6 +91,7 @@ class ExpanderResolve(
 }
 
 object ExpanderResolve {
+
   case class Pattern(
     path:      Regex,
     consulKey: Option[String],
@@ -104,26 +105,20 @@ object ExpanderResolve {
 
     new ExpanderResolve(
       consul = new ConsulService(
-      Try(config.getBoolean("expander.resolve.consul.enabled")).getOrElse(false),
-      Try(config.getString("expander.resolve.consul.addr")).getOrElse("http://127.0.0.1:8500"),
-      Try(config.getBoolean("expander.resolve.consul.dns-enabled")).getOrElse(false)
+      config.getBoolean("expander.resolve.consul.enabled"),
+      config.getString("expander.resolve.consul.addr"),
+      config.getBoolean("expander.resolve.consul.dns-enabled")
     ),
-      patterns = Try(
+      patterns =
         config.getConfigList("expander.resolve.patterns").toSeq
-      ).getOrElse(Seq(ConfigFactory.parseString(
-        """
-          | path = ".*"
-          | host = "localhost"
-        """.stripMargin
-      )))
-        .map(cfg ⇒
-          Pattern(
-            path = cfg.getString("path").r,
-            consulKey = Try(cfg.getString("consul-key")).toOption,
-            modify = Try(cfg.getString("modify-path")).toOption,
-            host = Try(cfg.getString("host")).toOption,
-            port = Try(cfg.getInt("port")).getOrElse(0)
-          ))
+          .map(cfg ⇒
+            Pattern(
+              path = cfg.getString("path").r,
+              consulKey = Try(cfg.getString("consul-key")).toOption,
+              modify = Try(cfg.getString("modify-path")).toOption,
+              host = Try(cfg.getString("host")).toOption,
+              port = Try(cfg.getInt("port")).getOrElse(0)
+            ))
     )
   }
 }

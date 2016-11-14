@@ -5,7 +5,7 @@ import scalariform.formatter.preferences._
 
 name := "expander"
 
-val expanderV = "0.6-beta1"
+val expanderV = "0.6-beta3"
 
 val akkaV = "2.4.12"
 
@@ -32,9 +32,7 @@ val commons = Seq(
     Resolver.bintrayRepo("alari", "generic")
   ),
   gitHeadCommitSha in ThisBuild := Process("git rev-parse --short HEAD").lines.head,
-  licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
-  bintrayPackageLabels := Seq("scala", "akka-http", "api", "json", "rest"),
-  bintrayRepository := "generic"
+  licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
 ) ++ commonScalariform
 
 commons
@@ -71,6 +69,12 @@ lazy val `resolve` = (project in file("resolve")).settings(commons:_*).settings(
 lazy val `expander` = (project in file("."))
   .dependsOn(`expander-akka`, `expander-core`)
   .aggregate(`expander-akka`, `expander-core`)
+  .settings(
+    dockerBaseImage := "isuper/java-oracle",
+    version in Docker := expanderV,
+    dockerExposedPorts := Seq(9000),
+    packageName in Docker := "quay.io/alari/expander"
+  )
 
 mainClass := Some("expander.akka.ExpanderApp")
 

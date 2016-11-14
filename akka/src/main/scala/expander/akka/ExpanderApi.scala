@@ -9,8 +9,6 @@ import akka.stream.Materializer
 import com.typesafe.config.Config
 import expander.resolve.ExpanderResolve
 
-import scala.util.Try
-
 class ExpanderApi(config: Config)(implicit system: ActorSystem, mat: Materializer) {
 
   private val port = config.getInt("expander.http.port")
@@ -19,7 +17,7 @@ class ExpanderApi(config: Config)(implicit system: ActorSystem, mat: Materialize
 
   logger.info("starting expander http server on port: {}", port)
 
-  val prefix = Try(config.getString("expander.proxy.prefix")).getOrElse("api")
+  val prefix = config.getString("expander.proxy.prefix")
   val filter = ExpanderFilter.forConfig(config)
   val resolve = ExpanderResolve.forConfig(config)
 

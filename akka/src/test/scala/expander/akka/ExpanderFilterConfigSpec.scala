@@ -88,7 +88,7 @@ class ExpanderFilterConfigSpec extends WordSpec with Matchers with BeforeAndAfte
           |  ]
           |}
         """.stripMargin
-      ))
+      ).withFallback(ConfigFactory.load()))
 
       efc.forwardHeaders shouldBe Set("authorization", "accept-language")
       efc.conditionalEnabled shouldBe true

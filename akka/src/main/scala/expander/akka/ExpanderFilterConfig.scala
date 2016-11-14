@@ -24,10 +24,10 @@ object ExpanderFilterConfig {
 
     val httpResolve = ExpanderResolve.forConfig(config)
 
-    val forwardHeaders = Try(config.getStringList("expander.forward-headers").toSet).getOrElse(Set.empty)
+    val forwardHeaders = config.getStringList("expander.forward-headers").toSet
     val setHeadersConfOpt = Try(config.getObject("expander.set-headers")).toOption
 
-    val conditionalEnabled = Try(config.getBoolean("expander.enable-conditional")).getOrElse(false)
+    val conditionalEnabled = config.getBoolean("expander.enable-conditional")
 
     val setHeaders: Seq[HttpHeader] = setHeadersConfOpt.fold(Seq.empty[HttpHeader]) { setHeadersConf ⇒
       setHeadersConf.keySet().map { k ⇒ k → Try(config.getString("expander.set-headers." + k)).toOption }.collect {
@@ -55,7 +55,7 @@ object ExpanderFilterConfig {
 
   def readPatterns(config: Config): Seq[ExpandPattern] = {
     import PathRequest.parsePath
-    Try(config.getConfigList("expander.patterns").toSeq).getOrElse(Seq.empty).flatMap { obj ⇒
+    config.getConfigList("expander.patterns").toSeq.flatMap { obj ⇒
       for {
         url ← Try(obj.getString("url")).toOption
 

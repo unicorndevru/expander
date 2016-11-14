@@ -1,15 +1,8 @@
 package expander.akka
 
 import akka.actor.ActorSystem
-import akka.event.Logging
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
 import com.typesafe.config.ConfigFactory
-import expander.resolve.ExpanderResolve
-
-import scala.util.Try
 
 object ExpanderApp extends App {
   val config = ConfigFactory.load()
